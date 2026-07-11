@@ -1,0 +1,18 @@
+@import 'tailwindcss';
+
+@keyframes layers-panel-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.layers-panel-in {
+  animation: layers-panel-in 180ms ease-out;
+}
+
+body {
+  margin: 0;
+}
