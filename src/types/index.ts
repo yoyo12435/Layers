@@ -6,6 +6,8 @@ export interface Location {
   description: string
   rating: number // 1-5
   category: Category
+  lat: number
+  lng: number
 }
 
 export interface Layer {

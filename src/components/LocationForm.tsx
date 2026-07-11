@@ -4,8 +4,10 @@ import { CATEGORIES, CATEGORY_COLORS, CATEGORY_LABELS } from '../types'
 import { StarRating } from './StarRating'
 import { XIcon } from './icons'
 
+type LocationDraft = Omit<Location, 'id' | 'lat' | 'lng'>
+
 interface LocationFormProps {
-  onSubmit: (location: Omit<Location, 'id'>) => void
+  onSubmit: (location: LocationDraft) => void
   onCancel: () => void
 }
 
