@@ -2,10 +2,11 @@ import { GoogleIcon, LayersIcon } from './icons'
 
 interface SignInScreenProps {
   configured: boolean
+  error: string | null
   onSignIn: () => void
 }
 
-export function SignInScreen({ configured, onSignIn }: SignInScreenProps) {
+export function SignInScreen({ configured, error, onSignIn }: SignInScreenProps) {
   return (
     <div className="h-svh w-full flex flex-col items-center justify-center bg-neutral-50 dark:bg-neutral-950 px-6">
       <div className="w-14 h-14 rounded-2xl bg-neutral-900 dark:bg-white flex items-center justify-center mb-5">
@@ -27,6 +28,12 @@ export function SignInScreen({ configured, onSignIn }: SignInScreenProps) {
       ) : (
         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 max-w-xs text-center">
           Sign-in isn't configured yet. Add your Firebase project keys to enable Google sign-in.
+        </p>
+      )}
+
+      {error && (
+        <p className="mt-4 text-xs text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 rounded-xl px-4 py-3 max-w-xs text-center">
+          {error}
         </p>
       )}
     </div>
