@@ -17,6 +17,13 @@ function errorMessage(err: unknown): string {
   if (code === 'auth/popup-blocked') {
     return 'Your browser blocked the sign-in popup. Allow popups for this site and try again.'
   }
+  if (code === 'auth/popup-closed-by-user') {
+    return "The sign-in window closed before finishing. If you didn't close it yourself, this usually means the domain isn't authorized yet, or Google sign-in isn't fully enabled in Firebase."
+  }
+  if (code === 'auth/operation-not-allowed') {
+    return 'Google sign-in is not enabled for this Firebase project. Turn it on under Authentication → Sign-in method.'
+  }
+  if (code) return `Sign-in failed (${code}).`
   if (typeof err === 'object' && err && 'message' in err && typeof (err as { message?: unknown }).message === 'string') {
     return (err as { message: string }).message
   }
@@ -47,7 +54,7 @@ export function useAuth() {
       await signInWithPopup(auth, googleProvider)
     } catch (err) {
       const code = (err as { code?: string })?.code
-      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return
+      if (code === 'auth/cancelled-popup-request') return
       if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
         try {
           await signInWithRedirect(auth, googleProvider)
