@@ -20,13 +20,13 @@ export function useLayers() {
     setLayers((prev) => {
       if (prev.some((l) => l.id === shared.id)) return prev
       setImportedLayerName(shared.name)
-      return [...prev, { ...shared, visible: true }]
+      return [...prev, { ...shared, visible: true, owned: false }]
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const createLayer = useCallback((name: string) => {
-    const layer: Layer = { id: uuid(), name, locations: [], visible: true }
+    const layer: Layer = { id: uuid(), name, locations: [], visible: true, owned: true }
     setLayers((prev) => [...prev, layer])
     return layer.id
   }, [])

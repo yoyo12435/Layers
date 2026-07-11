@@ -39,7 +39,7 @@ export function LayersPanel({ layers, onClose, onToggleVisibility, onDeleteLayer
   }
 
   return (
-    <div className="fixed inset-0 z-40">
+    <div className="fixed inset-0 z-[800]">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
       <div className="absolute right-0 top-0 h-full w-full max-w-sm bg-white shadow-2xl flex flex-col layers-panel-in">
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-200">
@@ -82,13 +82,20 @@ export function LayersPanel({ layers, onClose, onToggleVisibility, onDeleteLayer
                       className="w-full border border-neutral-300 rounded px-2 py-1 text-sm"
                     />
                   ) : (
-                    <button
-                      onClick={() => startRename(layer)}
-                      className={`text-sm font-medium truncate block text-left hover:underline ${layer.visible ? 'text-neutral-900' : 'text-neutral-400'}`}
-                      title="Click to rename"
-                    >
-                      {layer.name}
-                    </button>
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      <button
+                        onClick={() => startRename(layer)}
+                        className={`text-sm font-medium truncate text-left hover:underline ${layer.visible ? 'text-neutral-900' : 'text-neutral-400'}`}
+                        title="Click to rename"
+                      >
+                        {layer.name}
+                      </button>
+                      {!layer.owned && (
+                        <span className="text-[10px] font-medium uppercase tracking-wide text-neutral-400 bg-neutral-100 rounded px-1.5 py-0.5 shrink-0">
+                          Shared
+                        </span>
+                      )}
+                    </span>
                   )}
                   <span className="text-xs text-neutral-400">
                     {layer.locations.length} location{layer.locations.length === 1 ? '' : 's'}

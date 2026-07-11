@@ -15,6 +15,7 @@ export interface Layer {
   name: string
   locations: Location[]
   visible: boolean
+  owned: boolean
 }
 
 export const CATEGORY_COLORS: Record<Category, string> = {

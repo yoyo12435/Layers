@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { LatLngTuple } from 'leaflet'
-import { TopBar } from './components/TopBar'
 import { LayersPanel } from './components/LayersPanel'
 import { MapView, type FlatLocation } from './components/MapView'
-import { MapControls } from './components/MapControls'
+import { EditControls } from './components/EditControls'
+import { LayerPickerPill } from './components/LayerPickerPill'
+import { FabButton } from './components/FabButton'
 import { PendingLocationCard } from './components/PendingLocationCard'
+import { LocationEditCard } from './components/LocationEditCard'
 import { LocationDetailCard } from './components/LocationDetailCard'
+import { AddressSearchSheet } from './components/AddressSearchSheet'
+import { LayersIcon } from './components/icons'
 import { useLayers } from './lib/useLayers'
+import type { GeocodeResult } from './lib/geocode'
 
 function App() {
   const {
@@ -18,122 +23,181 @@ function App() {
     renameLayer,
     toggleLayerVisibility,
     addLocation,
+    updateLocation,
     deleteLocation,
   } = useLayers()
 
   const [panelOpen, setPanelOpen] = useState(false)
+  const [editMode, setEditMode] = useState(false)
   const [activeLayerId, setActiveLayerId] = useState<string | null>(null)
-  const [placing, setPlacing] = useState(false)
   const [pendingPoint, setPendingPoint] = useState<LatLngTuple | null>(null)
+  const [pendingInitialName, setPendingInitialName] = useState<string | undefined>(undefined)
+  const [editingItem, setEditingItem] = useState<FlatLocation | null>(null)
   const [selected, setSelected] = useState<FlatLocation | null>(null)
+  const [searchOpen, setSearchOpen] = useState(false)
 
   const visibleLayers = layers.filter((l) => l.visible)
+  const ownedVisibleLayers = visibleLayers.filter((l) => l.owned)
 
   useEffect(() => {
-    if (activeLayerId && visibleLayers.some((l) => l.id === activeLayerId)) return
-    setActiveLayerId(visibleLayers[0]?.id ?? null)
-  }, [activeLayerId, visibleLayers])
+    if (activeLayerId && ownedVisibleLayers.some((l) => l.id === activeLayerId)) return
+    setActiveLayerId(ownedVisibleLayers[0]?.id ?? null)
+  }, [activeLayerId, ownedVisibleLayers])
 
   const flatLocations = useMemo<FlatLocation[]>(
     () => visibleLayers.flatMap((layer) => layer.locations.map((location) => ({ location, layerId: layer.id }))),
     [visibleLayers],
   )
 
-  const activeLayer = layers.find((l) => l.id === activeLayerId) ?? null
+  const activeLayer = ownedVisibleLayers.find((l) => l.id === activeLayerId) ?? null
   const selectedLayer = selected ? layers.find((l) => l.id === selected.layerId) ?? null : null
+  const editingLayer = editingItem ? layers.find((l) => l.id === editingItem.layerId) ?? null : null
+
+  const clearInteractions = () => {
+    setPendingPoint(null)
+    setPendingInitialName(undefined)
+    setEditingItem(null)
+    setSelected(null)
+    setSearchOpen(false)
+  }
+
+  const handleToggleEdit = () => {
+    setEditMode((v) => !v)
+    clearInteractions()
+  }
 
   const handleMapClick = (lat: number, lng: number) => {
-    if (!placing) return
+    if (!editMode || !activeLayer || pendingPoint || editingItem) return
     setSelected(null)
     setPendingPoint([lat, lng])
-    setPlacing(false)
+    setPendingInitialName(undefined)
   }
 
   const handleMarkerClick = (item: FlatLocation) => {
-    setPlacing(false)
+    const layer = layers.find((l) => l.id === item.layerId)
     setPendingPoint(null)
-    setSelected(item)
+    if (editMode && layer?.owned) {
+      setSelected(null)
+      setEditingItem(item)
+    } else {
+      setEditingItem(null)
+      setSelected(item)
+    }
+  }
+
+  const handleSearchSelect = (result: GeocodeResult) => {
+    if (!activeLayer) return
+    setSearchOpen(false)
+    setSelected(null)
+    setEditingItem(null)
+    setPendingPoint([result.lat, result.lng])
+    setPendingInitialName(result.shortName)
   }
 
   return (
-    <div className="h-svh flex flex-col bg-neutral-50 overflow-hidden">
-      <TopBar layerCount={layers.length} onOpenLayers={() => setPanelOpen(true)} />
+    <div className="h-svh w-full relative overflow-hidden bg-neutral-100">
+      <MapView
+        locations={flatLocations}
+        editMode={editMode}
+        pendingPoint={pendingPoint}
+        onMapClick={handleMapClick}
+        onMarkerClick={handleMarkerClick}
+      />
+
+      <EditControls editMode={editMode} onToggleEdit={handleToggleEdit} onOpenSearch={() => setSearchOpen(true)} />
+
+      <div className="absolute top-4 right-4 z-[500]">
+        <FabButton onClick={() => setPanelOpen(true)} badge={layers.length} label="Your layers">
+          <LayersIcon className="w-5 h-5" />
+        </FabButton>
+      </div>
+
+      {editMode && (
+        <LayerPickerPill
+          ownedVisibleLayers={ownedVisibleLayers}
+          activeLayerId={activeLayerId}
+          onSelect={(id) => {
+            setActiveLayerId(id)
+            clearInteractions()
+          }}
+          onCreateLayer={createLayer}
+        />
+      )}
 
       {importedLayerName && (
-        <div className="px-4 sm:px-6 pt-3 z-[600]">
-          <div className="flex items-center justify-between bg-green-50 border border-green-200 text-green-800 text-sm rounded-lg px-4 py-2.5 max-w-xl mx-auto">
-            <span>
-              Added layer <strong>{importedLayerName}</strong> from your share link.
+        <div className="absolute top-20 left-4 right-4 z-[600] flex justify-center">
+          <div className="flex items-center gap-3 bg-white shadow-lg border border-green-200 text-green-800 text-sm rounded-full px-4 py-2 max-w-full">
+            <span className="truncate">
+              Added <strong>{importedLayerName}</strong> from a share link
             </span>
-            <button onClick={clearImportedLayerName} className="text-green-700 hover:underline font-medium">
+            <button onClick={clearImportedLayerName} className="text-green-700 hover:underline font-medium shrink-0">
               Dismiss
             </button>
           </div>
         </div>
       )}
 
-      <div className="relative flex-1 min-h-0">
-        <MapView
-          locations={flatLocations}
-          placing={placing}
-          pendingPoint={pendingPoint}
-          onMapClick={handleMapClick}
-          onMarkerClick={handleMarkerClick}
-        />
+      {layers.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-8">
+          <p className="bg-white/95 border border-neutral-200 rounded-xl px-5 py-3 text-sm text-neutral-500 shadow-sm text-center">
+            Tap the edit button, then create a layer to start dropping pins.
+          </p>
+        </div>
+      )}
 
-        <MapControls
-          layers={layers}
-          activeLayerId={activeLayerId}
-          onSelectActiveLayer={(id) => {
-            setActiveLayerId(id)
-            setPlacing(false)
+      {pendingPoint && activeLayer && (
+        <PendingLocationCard
+          lat={pendingPoint[0]}
+          lng={pendingPoint[1]}
+          layerName={activeLayer.name}
+          initialName={pendingInitialName}
+          onSubmit={(location) => {
+            addLocation(activeLayer.id, location)
             setPendingPoint(null)
+            setPendingInitialName(undefined)
           }}
-          onCreateLayer={createLayer}
-          placing={placing}
-          onStartPlacing={() => {
+          onCancel={() => {
+            setPendingPoint(null)
+            setPendingInitialName(undefined)
+          }}
+        />
+      )}
+
+      {editingItem && editingLayer && (
+        <LocationEditCard
+          location={editingItem.location}
+          layerName={editingLayer.name}
+          onSave={(updates) => {
+            updateLocation(editingItem.layerId, editingItem.location.id, updates)
+            setEditingItem(null)
+          }}
+          onCancel={() => setEditingItem(null)}
+          onDelete={() => {
+            deleteLocation(editingItem.layerId, editingItem.location.id)
+            setEditingItem(null)
+          }}
+        />
+      )}
+
+      {selected && selectedLayer && (
+        <LocationDetailCard
+          location={selected.location}
+          layerName={selectedLayer.name}
+          onClose={() => setSelected(null)}
+          onDelete={() => {
+            deleteLocation(selected.layerId, selected.location.id)
             setSelected(null)
-            setPlacing(true)
-          }}
-          onCancelPlacing={() => {
-            setPlacing(false)
-            setPendingPoint(null)
           }}
         />
+      )}
 
-        {layers.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-4">
-            <p className="bg-white/90 border border-neutral-200 rounded-xl px-5 py-3 text-sm text-neutral-500 shadow-sm">
-              Create your first layer to start dropping pins.
-            </p>
-          </div>
-        )}
-
-        {pendingPoint && activeLayer && (
-          <PendingLocationCard
-            lat={pendingPoint[0]}
-            lng={pendingPoint[1]}
-            layerName={activeLayer.name}
-            onSubmit={(location) => {
-              addLocation(activeLayer.id, location)
-              setPendingPoint(null)
-            }}
-            onCancel={() => setPendingPoint(null)}
-          />
-        )}
-
-        {selected && selectedLayer && (
-          <LocationDetailCard
-            location={selected.location}
-            layerName={selectedLayer.name}
-            onClose={() => setSelected(null)}
-            onDelete={() => {
-              deleteLocation(selected.layerId, selected.location.id)
-              setSelected(null)
-            }}
-          />
-        )}
-      </div>
+      {searchOpen && (
+        <AddressSearchSheet
+          activeLayerName={activeLayer?.name ?? null}
+          onSelect={handleSearchSelect}
+          onClose={() => setSearchOpen(false)}
+        />
+      )}
 
       {panelOpen && (
         <LayersPanel

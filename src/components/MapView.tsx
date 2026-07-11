@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet'
+import L from 'leaflet'
 import type { LatLngExpression, LatLngTuple } from 'leaflet'
 import type { Location } from '../types'
 import { categoryIcon, pendingPinIcon } from '../lib/mapIcons'
@@ -11,7 +12,7 @@ export interface FlatLocation {
 
 interface MapViewProps {
   locations: FlatLocation[]
-  placing: boolean
+  editMode: boolean
   pendingPoint: LatLngTuple | null
   onMapClick: (lat: number, lng: number) => void
   onMarkerClick: (item: FlatLocation) => void
@@ -47,22 +48,27 @@ function FitToLocations({ locations }: { locations: FlatLocation[] }) {
   return null
 }
 
-export function MapView({ locations, placing, pendingPoint, onMapClick, onMarkerClick }: MapViewProps) {
+export function MapView({ locations, editMode, pendingPoint, onMapClick, onMarkerClick }: MapViewProps) {
   return (
-    <div className={`absolute inset-0 ${placing ? 'cursor-crosshair' : ''}`}>
-      <MapContainer center={DEFAULT_CENTER} zoom={DEFAULT_ZOOM} scrollWheelZoom className="w-full h-full">
+    <div className={`absolute inset-0 ${editMode ? 'cursor-crosshair' : ''}`}>
+      <MapContainer center={DEFAULT_CENTER} zoom={DEFAULT_ZOOM} scrollWheelZoom zoomControl={false} className="w-full h-full">
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <ClickHandler active={placing} onClick={onMapClick} />
+        <ClickHandler active={editMode} onClick={onMapClick} />
         <FitToLocations locations={locations} />
         {locations.map(({ location, layerId }) => (
           <Marker
             key={location.id}
             position={[location.lat, location.lng]}
             icon={categoryIcon(location.category)}
-            eventHandlers={{ click: () => onMarkerClick({ location, layerId }) }}
+            eventHandlers={{
+              click: (e) => {
+                L.DomEvent.stopPropagation(e)
+                onMarkerClick({ location, layerId })
+              },
+            }}
           />
         ))}
         {pendingPoint && <Marker position={pendingPoint} icon={pendingPinIcon()} />}

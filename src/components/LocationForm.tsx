@@ -2,20 +2,24 @@ import { useState } from 'react'
 import type { Category, Location } from '../types'
 import { CATEGORIES, CATEGORY_COLORS, CATEGORY_LABELS } from '../types'
 import { StarRating } from './StarRating'
-import { XIcon } from './icons'
+import { TrashIcon, XIcon } from './icons'
 
-type LocationDraft = Omit<Location, 'id' | 'lat' | 'lng'>
+export type LocationDraft = Omit<Location, 'id' | 'lat' | 'lng'>
 
 interface LocationFormProps {
+  title?: string
+  submitLabel?: string
+  initial?: Partial<LocationDraft>
   onSubmit: (location: LocationDraft) => void
   onCancel: () => void
+  onDelete?: () => void
 }
 
-export function LocationForm({ onSubmit, onCancel }: LocationFormProps) {
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [rating, setRating] = useState(0)
-  const [category, setCategory] = useState<Category>('other')
+export function LocationForm({ title = 'New location', submitLabel = 'Add location', initial, onSubmit, onCancel, onDelete }: LocationFormProps) {
+  const [name, setName] = useState(initial?.name ?? '')
+  const [description, setDescription] = useState(initial?.description ?? '')
+  const [rating, setRating] = useState(initial?.rating ?? 0)
+  const [category, setCategory] = useState<Category>(initial?.category ?? 'other')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -26,13 +30,20 @@ export function LocationForm({ onSubmit, onCancel }: LocationFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white border border-neutral-200 rounded-xl p-4 shadow-sm flex flex-col gap-3"
+      className="bg-white border border-neutral-200 rounded-xl p-4 shadow-xl flex flex-col gap-3"
     >
       <div className="flex items-center justify-between">
-        <h4 className="font-medium text-neutral-900 text-sm">New location</h4>
-        <button type="button" onClick={onCancel} className="p-1 rounded text-neutral-400 hover:bg-neutral-100">
-          <XIcon className="w-4 h-4" />
-        </button>
+        <h4 className="font-medium text-neutral-900 text-sm">{title}</h4>
+        <div className="flex items-center gap-1">
+          {onDelete && (
+            <button type="button" onClick={onDelete} className="p-1 rounded text-neutral-400 hover:bg-red-50 hover:text-red-600" aria-label="Delete location">
+              <TrashIcon className="w-4 h-4" />
+            </button>
+          )}
+          <button type="button" onClick={onCancel} className="p-1 rounded text-neutral-400 hover:bg-neutral-100" aria-label="Cancel">
+            <XIcon className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       <input
@@ -83,7 +94,7 @@ export function LocationForm({ onSubmit, onCancel }: LocationFormProps) {
         type="submit"
         className="mt-1 bg-neutral-900 text-white text-sm font-medium rounded-lg py-2 hover:bg-neutral-700 transition-colors"
       >
-        Add location
+        {submitLabel}
       </button>
     </form>
   )
