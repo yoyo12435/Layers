@@ -31,14 +31,14 @@ export function LayerPickerPill({ ownedVisibleLayers, activeLayerId, onSelect, o
     <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[500] flex flex-col items-center max-w-[calc(100vw-136px)]">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 bg-white shadow-lg border border-neutral-200 rounded-full pl-3 pr-2.5 py-2 text-sm font-medium text-neutral-800 max-w-full"
+        className="flex items-center gap-1.5 bg-white dark:bg-neutral-900 shadow-lg border border-neutral-200 dark:border-neutral-700 rounded-full pl-3 pr-2.5 py-2 text-sm font-medium text-neutral-800 dark:text-neutral-100 max-w-full"
       >
         <span className="truncate">{activeLayer ? activeLayer.name : 'Choose a layer'}</span>
         <ChevronDownIcon className="w-4 h-4 shrink-0 text-neutral-400" />
       </button>
 
       {open && (
-        <div className="mt-1.5 w-56 max-w-[calc(100vw-32px)] bg-white shadow-xl border border-neutral-200 rounded-xl overflow-hidden">
+        <div className="mt-1.5 w-56 max-w-[calc(100vw-32px)] bg-white dark:bg-neutral-900 shadow-xl border border-neutral-200 dark:border-neutral-700 rounded-xl overflow-hidden">
           {ownedVisibleLayers.map((layer) => (
             <button
               key={layer.id}
@@ -46,15 +46,15 @@ export function LayerPickerPill({ ownedVisibleLayers, activeLayerId, onSelect, o
                 onSelect(layer.id)
                 setOpen(false)
               }}
-              className={`w-full text-left px-3.5 py-2.5 text-sm truncate hover:bg-neutral-50 ${
-                layer.id === activeLayerId ? 'font-semibold text-neutral-900' : 'text-neutral-600'
+              className={`w-full text-left px-3.5 py-2.5 text-sm truncate hover:bg-neutral-50 dark:hover:bg-neutral-800 ${
+                layer.id === activeLayerId ? 'font-semibold text-neutral-900 dark:text-white' : 'text-neutral-600 dark:text-neutral-400'
               }`}
             >
               {layer.name}
             </button>
           ))}
 
-          {ownedVisibleLayers.length > 0 && <div className="border-t border-neutral-100" />}
+          {ownedVisibleLayers.length > 0 && <div className="border-t border-neutral-100 dark:border-neutral-800" />}
 
           {creating ? (
             <div className="flex items-center gap-1.5 px-2.5 py-2">
@@ -67,9 +67,9 @@ export function LayerPickerPill({ ownedVisibleLayers, activeLayerId, onSelect, o
                   if (e.key === 'Escape') setCreating(false)
                 }}
                 placeholder="Layer name"
-                className="flex-1 min-w-0 border border-neutral-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-800"
+                className="flex-1 min-w-0 border border-neutral-300 dark:border-neutral-600 dark:bg-neutral-800 dark:text-white rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-800 dark:focus:ring-neutral-400"
               />
-              <button onClick={submitCreate} className="bg-neutral-900 text-white text-xs font-medium rounded-lg px-2.5 py-1.5 shrink-0">
+              <button onClick={submitCreate} className="bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-medium rounded-lg px-2.5 py-1.5 shrink-0">
                 Create
               </button>
               <button onClick={() => setCreating(false)} className="p-1 rounded text-neutral-400 shrink-0">
@@ -79,7 +79,7 @@ export function LayerPickerPill({ ownedVisibleLayers, activeLayerId, onSelect, o
           ) : (
             <button
               onClick={() => setCreating(true)}
-              className="w-full flex items-center gap-1.5 text-left px-3.5 py-2.5 text-sm text-neutral-500 hover:bg-neutral-50"
+              className="w-full flex items-center gap-1.5 text-left px-3.5 py-2.5 text-sm text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800"
             >
               <PlusIcon className="w-3.5 h-3.5" />
               New layer

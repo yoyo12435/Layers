@@ -37,3 +37,16 @@ export function pendingPinIcon(): L.DivIcon {
   })
   return pendingIconCache
 }
+
+let currentLocationIconCache: L.DivIcon | null = null
+
+export function currentLocationIcon(): L.DivIcon {
+  if (currentLocationIconCache) return currentLocationIconCache
+  currentLocationIconCache = L.divIcon({
+    className: 'layers-current-location',
+    html: `<span class="layers-current-location-dot"></span>`,
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+  })
+  return currentLocationIconCache
+}

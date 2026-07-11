@@ -13,8 +13,8 @@ interface PendingLocationCardProps {
 export function PendingLocationCard({ lat, lng, layerName, initialName, onSubmit, onCancel }: PendingLocationCardProps) {
   return (
     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[500] w-[min(360px,calc(100vw-2rem))]">
-      <p className="text-xs text-neutral-500 mb-1.5 text-center">
-        New pin in <span className="font-medium text-neutral-700">{layerName}</span> &middot; {lat.toFixed(4)}, {lng.toFixed(4)}
+      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1.5 text-center">
+        New pin in <span className="font-medium text-neutral-700 dark:text-neutral-200">{layerName}</span> &middot; {lat.toFixed(4)}, {lng.toFixed(4)}
       </p>
       <LocationForm
         initial={initialName ? { name: initialName } : undefined}

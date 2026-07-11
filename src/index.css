@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 @import 'leaflet/dist/leaflet.css';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @keyframes layers-panel-in {
   from {
     transform: translateX(100%);
@@ -14,6 +16,55 @@
   animation: layers-panel-in 180ms ease-out;
 }
 
+@keyframes layers-panel-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.layers-panel-in-left {
+  animation: layers-panel-in-left 180ms ease-out;
+}
+
 body {
   margin: 0;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+.layers-current-location-dot {
+  position: relative;
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #4285f4;
+  border: 3px solid white;
+  box-shadow: 0 0 0 1px rgba(66, 133, 244, 0.4), 0 0 8px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes layers-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+.layers-current-location-dot::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 9999px;
+  background: rgba(66, 133, 244, 0.5);
+  animation: layers-pulse 2s ease-out infinite;
 }

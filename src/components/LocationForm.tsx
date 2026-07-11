@@ -30,17 +30,17 @@ export function LocationForm({ title = 'New location', submitLabel = 'Add locati
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white border border-neutral-200 rounded-xl p-4 shadow-xl flex flex-col gap-3"
+      className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl p-4 shadow-xl flex flex-col gap-3"
     >
       <div className="flex items-center justify-between">
-        <h4 className="font-medium text-neutral-900 text-sm">{title}</h4>
+        <h4 className="font-medium text-neutral-900 dark:text-white text-sm">{title}</h4>
         <div className="flex items-center gap-1">
           {onDelete && (
-            <button type="button" onClick={onDelete} className="p-1 rounded text-neutral-400 hover:bg-red-50 hover:text-red-600" aria-label="Delete location">
+            <button type="button" onClick={onDelete} className="p-1 rounded text-neutral-400 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600" aria-label="Delete location">
               <TrashIcon className="w-4 h-4" />
             </button>
           )}
-          <button type="button" onClick={onCancel} className="p-1 rounded text-neutral-400 hover:bg-neutral-100" aria-label="Cancel">
+          <button type="button" onClick={onCancel} className="p-1 rounded text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800" aria-label="Cancel">
             <XIcon className="w-4 h-4" />
           </button>
         </div>
@@ -51,7 +51,7 @@ export function LocationForm({ title = 'New location', submitLabel = 'Add locati
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Name"
-        className="border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-800"
+        className="border border-neutral-300 dark:border-neutral-600 dark:bg-neutral-800 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-800 dark:focus:ring-neutral-400"
         required
       />
 
@@ -60,11 +60,11 @@ export function LocationForm({ title = 'New location', submitLabel = 'Add locati
         onChange={(e) => setDescription(e.target.value)}
         placeholder="Description"
         rows={2}
-        className="border border-neutral-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-neutral-800"
+        className="border border-neutral-300 dark:border-neutral-600 dark:bg-neutral-800 dark:text-white rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-neutral-800 dark:focus:ring-neutral-400"
       />
 
       <div className="flex items-center justify-between">
-        <span className="text-xs text-neutral-500">Rating</span>
+        <span className="text-xs text-neutral-500 dark:text-neutral-400">Rating</span>
         <StarRating value={rating} onChange={setRating} />
       </div>
 
@@ -92,7 +92,7 @@ export function LocationForm({ title = 'New location', submitLabel = 'Add locati
 
       <button
         type="submit"
-        className="mt-1 bg-neutral-900 text-white text-sm font-medium rounded-lg py-2 hover:bg-neutral-700 transition-colors"
+        className="mt-1 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium rounded-lg py-2 hover:bg-neutral-700 dark:hover:bg-neutral-200 transition-colors"
       >
         {submitLabel}
       </button>
