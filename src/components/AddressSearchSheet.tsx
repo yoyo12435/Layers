@@ -58,9 +58,9 @@ export function AddressSearchSheet({ activeLayerName, onSelect, onClose }: Addre
   }
 
   return (
-    <div className="absolute inset-0 z-[700] flex flex-col justify-end">
+    <div className="absolute inset-0 z-[700] flex flex-col items-center pt-20 px-4">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative bg-white dark:bg-neutral-900 rounded-t-2xl shadow-2xl max-h-[70vh] flex flex-col">
+      <div className="relative w-full max-w-sm bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl max-h-[70vh] flex flex-col">
         <div className="flex items-center justify-between px-4 pt-4 pb-2">
           <h2 className="text-base font-semibold text-neutral-900 dark:text-white">Add by address or name</h2>
           <button onClick={onClose} className="p-1.5 rounded-full text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800" aria-label="Close">

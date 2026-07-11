@@ -273,11 +273,20 @@ function MapApp({ user, onSignOut, dark, onToggleDark }: MapAppProps) {
 }
 
 function App() {
-  const { user, loading, signIn, signOut, configured, error } = useAuth()
+  const { user, loading, signInWithGoogle, continueWithEmail, signOut, configured, error } = useAuth()
   const { dark, toggleDark } = useDarkMode()
 
   if (loading) return <LoadingScreen />
-  if (!user) return <SignInScreen configured={configured} error={error} onSignIn={signIn} />
+  if (!user) {
+    return (
+      <SignInScreen
+        configured={configured}
+        error={error}
+        onSignInWithGoogle={signInWithGoogle}
+        onContinueWithEmail={continueWithEmail}
+      />
+    )
+  }
 
   return <MapApp user={user} onSignOut={signOut} dark={dark} onToggleDark={toggleDark} />
 }
