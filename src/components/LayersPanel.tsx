@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Layer } from '../types'
-import { EyeIcon, EyeOffIcon, ShareIcon, TrashIcon, XIcon, CheckIcon, PinIcon } from './icons'
+import { EyeIcon, EyeOffIcon, ShareIcon, TrashIcon, XIcon, CheckIcon, PinIcon, PlusIcon } from './icons'
 import { buildShareUrl } from '../lib/share'
 
 interface LayersPanelProps {
@@ -9,6 +9,7 @@ interface LayersPanelProps {
   onToggleVisibility: (layerId: string) => void
   onDeleteLayer: (layerId: string) => void
   onRenameLayer: (layerId: string, name: string) => void
+  onCreateLayer: (name: string) => string
   pinnedLayer: Layer
   onTogglePinnedVisible: () => void
   pinnedLoading: boolean
@@ -21,6 +22,7 @@ export function LayersPanel({
   onToggleVisibility,
   onDeleteLayer,
   onRenameLayer,
+  onCreateLayer,
   pinnedLayer,
   onTogglePinnedVisible,
   pinnedLoading,
@@ -29,6 +31,15 @@ export function LayersPanel({
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
+  const [creatingLayer, setCreatingLayer] = useState(false)
+  const [newLayerName, setNewLayerName] = useState('')
+
+  const submitCreateLayer = () => {
+    const trimmed = newLayerName.trim()
+    if (trimmed) onCreateLayer(trimmed)
+    setNewLayerName('')
+    setCreatingLayer(false)
+  }
 
   const handleShare = async (layer: Layer) => {
     const url = buildShareUrl(layer)
@@ -61,6 +72,38 @@ export function LayersPanel({
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400" aria-label="Close">
             <XIcon className="w-5 h-5" />
           </button>
+        </div>
+
+        <div className="px-5 py-3 border-b border-neutral-200 dark:border-neutral-800">
+          {creatingLayer ? (
+            <div className="flex items-center gap-1.5">
+              <input
+                autoFocus
+                value={newLayerName}
+                onChange={(e) => setNewLayerName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') submitCreateLayer()
+                  if (e.key === 'Escape') setCreatingLayer(false)
+                }}
+                placeholder="Layer name"
+                className="flex-1 min-w-0 border border-neutral-300 dark:border-neutral-600 dark:bg-neutral-800 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-800 dark:focus:ring-neutral-400"
+              />
+              <button onClick={submitCreateLayer} className="bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium rounded-lg px-3 py-2 shrink-0">
+                Create
+              </button>
+              <button onClick={() => setCreatingLayer(false)} className="p-2 rounded-lg text-neutral-400 shrink-0">
+                <XIcon className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setCreatingLayer(true)}
+              className="w-full flex items-center justify-center gap-1.5 text-sm font-medium border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-white hover:border-neutral-400 dark:hover:border-neutral-500 rounded-xl px-4 py-2.5"
+            >
+              <PlusIcon className="w-4 h-4" />
+              New layer
+            </button>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto">

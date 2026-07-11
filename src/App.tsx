@@ -60,6 +60,7 @@ function MapApp({ user, onSignOut, dark, onToggleDark }: MapAppProps) {
   const { nearbyLayer, toggleNearbyVisible, loading: nearbyLoading, tooZoomedOut: nearbyTooZoomedOut } = useNearbyLayer(bounds)
 
   const visibleLayers = layers.filter((l) => l.visible)
+  const ownedLayers = layers.filter((l) => l.owned)
   const ownedVisibleLayers = visibleLayers.filter((l) => l.owned)
 
   useEffect(() => {
@@ -125,6 +126,12 @@ function MapApp({ user, onSignOut, dark, onToggleDark }: MapAppProps) {
     setFlyTo({ lat: position.lat, lng: position.lng, zoom: 16, token: Date.now() })
   }
 
+  const handleCreateLayer = (name: string) => {
+    const id = createLayer(name)
+    setActiveLayerId(id)
+    return id
+  }
+
   return (
     <div className="h-svh w-full relative overflow-hidden bg-neutral-100 dark:bg-neutral-950">
       <MapView
@@ -162,7 +169,6 @@ function MapApp({ user, onSignOut, dark, onToggleDark }: MapAppProps) {
             setActiveLayerId(id)
             clearInteractions()
           }}
-          onCreateLayer={createLayer}
         />
       )}
 
@@ -182,7 +188,7 @@ function MapApp({ user, onSignOut, dark, onToggleDark }: MapAppProps) {
       {layers.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-8">
           <p className="bg-white/95 dark:bg-neutral-900/95 border border-neutral-200 dark:border-neutral-700 rounded-xl px-5 py-3 text-sm text-neutral-500 dark:text-neutral-400 shadow-sm text-center">
-            Tap the edit button, then create a layer to start dropping pins.
+            Open Layers (top right) to create your first layer, then tap Edit to start dropping pins.
           </p>
         </div>
       )}
@@ -208,9 +214,15 @@ function MapApp({ user, onSignOut, dark, onToggleDark }: MapAppProps) {
       {editingItem && editingLayer && (
         <LocationEditCard
           location={editingItem.location}
-          layerName={editingLayer.name}
-          onSave={(updates) => {
-            updateLocation(editingItem.layerId, editingItem.location.id, updates)
+          layerId={editingItem.layerId}
+          ownedLayers={ownedLayers}
+          onSave={(updates, targetLayerId) => {
+            if (targetLayerId !== editingItem.layerId) {
+              deleteLocation(editingItem.layerId, editingItem.location.id)
+              addLocation(targetLayerId, { ...updates, lat: editingItem.location.lat, lng: editingItem.location.lng })
+            } else {
+              updateLocation(editingItem.layerId, editingItem.location.id, updates)
+            }
             setEditingItem(null)
           }}
           onCancel={() => setEditingItem(null)}
@@ -252,6 +264,7 @@ function MapApp({ user, onSignOut, dark, onToggleDark }: MapAppProps) {
           onToggleVisibility={toggleLayerVisibility}
           onDeleteLayer={deleteLayer}
           onRenameLayer={renameLayer}
+          onCreateLayer={handleCreateLayer}
           pinnedLayer={nearbyLayer}
           onTogglePinnedVisible={toggleNearbyVisible}
           pinnedLoading={nearbyLoading}
