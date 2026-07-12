@@ -5,9 +5,10 @@ const cache = new Map<string, L.DivIcon>()
 
 function pinSvg(color: string, outlined: boolean): string {
   const ring = outlined ? ' stroke="white" stroke-width="2.5"' : ''
-  return `<svg width="30" height="36" viewBox="0 0 30 36" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="15" cy="28" rx="5" ry="2.2" fill="rgba(15,15,15,0.35)"${ring}/>
-    <rect x="8" y="6" width="14" height="14" rx="3" fill="${color}"${ring} transform="rotate(45 15 13)"/>
+  return `<svg width="30" height="40" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="15" cy="36" rx="5" ry="2.2" fill="rgba(15,15,15,0.35)"${ring}/>
+    <polygon points="15,4 24,16 15,34 6,16" fill="${color}"${ring} stroke-linejoin="round"/>
+    <polygon points="15,11.2 18.6,16 15,23.2 11.4,16" fill="white"/>
   </svg>`
 }
 
@@ -18,9 +19,9 @@ export function categoryIcon(category: Category, outlined: boolean): L.DivIcon {
   const icon = L.divIcon({
     className: 'layers-pin',
     html: pinSvg(CATEGORY_COLORS[category], outlined),
-    iconSize: [30, 36],
-    iconAnchor: [15, 31],
-    popupAnchor: [0, -28],
+    iconSize: [30, 40],
+    iconAnchor: [15, 38],
+    popupAnchor: [0, -32],
   })
   cache.set(key, icon)
   return icon
@@ -33,9 +34,9 @@ export function nearbyPinIcon(): L.DivIcon {
   nearbyIconCache = L.divIcon({
     className: 'layers-pin',
     html: pinSvg('#f97316', false),
-    iconSize: [30, 36],
-    iconAnchor: [15, 31],
-    popupAnchor: [0, -28],
+    iconSize: [30, 40],
+    iconAnchor: [15, 38],
+    popupAnchor: [0, -32],
   })
   return nearbyIconCache
 }
@@ -47,9 +48,9 @@ export function pendingPinIcon(): L.DivIcon {
   pendingIconCache = L.divIcon({
     className: 'layers-pin layers-pin-pending',
     html: pinSvg('#6b7280', true),
-    iconSize: [30, 36],
-    iconAnchor: [15, 31],
-    popupAnchor: [0, -28],
+    iconSize: [30, 40],
+    iconAnchor: [15, 38],
+    popupAnchor: [0, -32],
   })
   return pendingIconCache
 }
