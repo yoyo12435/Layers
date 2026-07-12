@@ -82,6 +82,28 @@ export function useCloudLayers(uid: string | null) {
     [layersRef, layers],
   )
 
+  const toggleLayerPinned = useCallback(
+    (layerId: string) => {
+      const layer = layers.find((l) => l.id === layerId)
+      if (layersRef && layer) updateDoc(doc(layersRef, layerId), { pinned: !layer.pinned })
+    },
+    [layersRef, layers],
+  )
+
+  // Copies every location from a shared layer into one of the caller's own
+  // layers. Copies get fresh ids (mirrors the single-location "add to my
+  // layer" flow) so they aren't kept in sync with the source afterwards.
+  const duplicateLayerLocations = useCallback(
+    (sourceLayerId: string, targetLayerId: string) => {
+      const source = layers.find((l) => l.id === sourceLayerId)
+      const target = layers.find((l) => l.id === targetLayerId)
+      if (!layersRef || !source || !target) return
+      const copies: Location[] = source.locations.map((loc) => ({ ...loc, id: uuid() }))
+      updateDoc(doc(layersRef, targetLayerId), { locations: [...target.locations, ...copies] })
+    },
+    [layersRef, layers],
+  )
+
   const addLocation = useCallback(
     (layerId: string, location: Omit<Location, 'id'>) => {
       const layer = layers.find((l) => l.id === layerId)
@@ -153,6 +175,8 @@ export function useCloudLayers(uid: string | null) {
     deleteLayer,
     renameLayer,
     toggleLayerVisibility,
+    toggleLayerPinned,
+    duplicateLayerLocations,
     addLocation,
     updateLocation,
     deleteLocation,

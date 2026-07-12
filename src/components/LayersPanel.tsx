@@ -1,15 +1,18 @@
-import { useState } from 'react'
+import { Fragment, useRef, useState } from 'react'
 import type { Layer } from '../types'
-import { EyeIcon, EyeOffIcon, ShareIcon, TrashIcon, XIcon, CheckIcon, PinIcon, PlusIcon } from './icons'
+import { EyeIcon, EyeOffIcon, ShareIcon, TrashIcon, XIcon, CheckIcon, PinIcon, PlusIcon, DuplicateIcon } from './icons'
 import { buildShareUrl } from '../lib/share'
+import { sortLayers } from '../lib/sortLayers'
 
 interface LayersPanelProps {
   layers: Layer[]
   onClose: () => void
   onToggleVisibility: (layerId: string) => void
+  onTogglePinned: (layerId: string) => void
   onDeleteLayer: (layerId: string) => void
   onRenameLayer: (layerId: string, name: string) => void
   onCreateLayer: (name: string) => string
+  onDuplicateLayer: (sourceLayerId: string, targetLayerId: string) => void
   pinnedLayer: Layer
   onTogglePinnedVisible: () => void
   pinnedLoading: boolean
@@ -20,9 +23,11 @@ export function LayersPanel({
   layers,
   onClose,
   onToggleVisibility,
+  onTogglePinned,
   onDeleteLayer,
   onRenameLayer,
   onCreateLayer,
+  onDuplicateLayer,
   pinnedLayer,
   onTogglePinnedVisible,
   pinnedLoading,
@@ -34,6 +39,36 @@ export function LayersPanel({
   const [renameValue, setRenameValue] = useState('')
   const [creatingLayer, setCreatingLayer] = useState(false)
   const [newLayerName, setNewLayerName] = useState('')
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null)
+  const [duplicatedInto, setDuplicatedInto] = useState<Record<string, string>>({})
+  const [allHidden, setAllHidden] = useState(false)
+  const hiddenSnapshotRef = useRef<Record<string, boolean> | null>(null)
+
+  const sortedLayers = sortLayers(layers)
+  const ownedTargets = layers.filter((l) => l.owned)
+
+  const handleToggleAllVisibility = () => {
+    if (!allHidden) {
+      const snapshot: Record<string, boolean> = { [pinnedLayer.id]: pinnedLayer.visible }
+      if (pinnedLayer.visible) onTogglePinnedVisible()
+      for (const layer of layers) {
+        snapshot[layer.id] = layer.visible
+        if (layer.visible) onToggleVisibility(layer.id)
+      }
+      hiddenSnapshotRef.current = snapshot
+      setAllHidden(true)
+    } else {
+      const snapshot = hiddenSnapshotRef.current
+      if (snapshot) {
+        if (snapshot[pinnedLayer.id] && !pinnedLayer.visible) onTogglePinnedVisible()
+        for (const layer of layers) {
+          if (snapshot[layer.id] && !layer.visible) onToggleVisibility(layer.id)
+        }
+      }
+      hiddenSnapshotRef.current = null
+      setAllHidden(false)
+    }
+  }
 
   const submitCreateLayer = () => {
     const trimmed = newLayerName.trim()
@@ -77,9 +112,19 @@ export function LayersPanel({
       <div className="absolute right-0 top-0 h-full w-full max-w-sm bg-white shadow-2xl flex flex-col layers-panel-in">
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-200">
           <h2 className="text-lg font-semibold text-neutral-900">Your Layers</h2>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-neutral-100 text-neutral-500" aria-label="Close">
-            <XIcon className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleToggleAllVisibility}
+              className="p-1.5 rounded-full hover:bg-neutral-100 text-neutral-500"
+              aria-label={allHidden ? 'Show all layers' : 'Hide all layers'}
+              title={allHidden ? 'Show all layers' : 'Hide all layers'}
+            >
+              {allHidden ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+            </button>
+            <button onClick={onClose} className="p-1.5 rounded-full hover:bg-neutral-100 text-neutral-500" aria-label="Close">
+              <XIcon className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <div className="px-5 py-3 border-b border-neutral-200">
@@ -149,76 +194,130 @@ export function LayersPanel({
               </p>
             )}
 
-            {layers.map((layer) => (
-              <li key={layer.id} className="px-5 py-3 flex items-center gap-3">
-                <button
-                  onClick={() => onToggleVisibility(layer.id)}
-                  className={`p-1.5 rounded-full shrink-0 transition-colors ${layer.visible ? 'text-neutral-700 hover:bg-neutral-100' : 'text-neutral-300 hover:bg-neutral-100'}`}
-                  aria-label={layer.visible ? `Hide ${layer.name}` : `Show ${layer.name}`}
-                  title={layer.visible ? 'Visible — click to hide' : 'Hidden — click to show'}
-                >
-                  {layer.visible ? <EyeIcon className="w-5 h-5" /> : <EyeOffIcon className="w-5 h-5" />}
-                </button>
+            {sortedLayers.map((layer) => (
+              <Fragment key={layer.id}>
+                <li className="px-5 py-3 flex items-center gap-3">
+                  <button
+                    onClick={() => onToggleVisibility(layer.id)}
+                    className={`p-1.5 rounded-full shrink-0 transition-colors ${layer.visible ? 'text-neutral-700 hover:bg-neutral-100' : 'text-neutral-300 hover:bg-neutral-100'}`}
+                    aria-label={layer.visible ? `Hide ${layer.name}` : `Show ${layer.name}`}
+                    title={layer.visible ? 'Visible — click to hide' : 'Hidden — click to show'}
+                  >
+                    {layer.visible ? <EyeIcon className="w-5 h-5" /> : <EyeOffIcon className="w-5 h-5" />}
+                  </button>
 
-                <div className="flex-1 min-w-0">
-                  {renamingId === layer.id ? (
-                    <input
-                      autoFocus
-                      value={renameValue}
-                      onChange={(e) => setRenameValue(e.target.value)}
-                      onBlur={() => commitRename(layer.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') commitRename(layer.id)
-                        if (e.key === 'Escape') setRenamingId(null)
-                      }}
-                      className="w-full border border-neutral-300 rounded px-2 py-1 text-sm"
-                    />
-                  ) : (
-                    <span className="flex items-center gap-1.5 min-w-0">
-                      <button
-                        onClick={() => startRename(layer)}
-                        className={`text-sm font-medium truncate text-left hover:underline ${layer.visible ? 'text-neutral-900' : 'text-neutral-400'}`}
-                        title="Click to rename"
-                      >
-                        {layer.name}
-                      </button>
-                      {!layer.owned && (
-                        <span className="text-[10px] font-medium uppercase tracking-wide text-neutral-400 bg-neutral-100 rounded px-1.5 py-0.5 shrink-0">
-                          Shared
-                        </span>
-                      )}
+                  <div className="flex-1 min-w-0">
+                    {renamingId === layer.id ? (
+                      <input
+                        autoFocus
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onBlur={() => commitRename(layer.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') commitRename(layer.id)
+                          if (e.key === 'Escape') setRenamingId(null)
+                        }}
+                        className="w-full border border-neutral-300 rounded px-2 py-1 text-sm"
+                      />
+                    ) : (
+                      <span className="flex items-center gap-1.5 min-w-0">
+                        <button
+                          onClick={() => onTogglePinned(layer.id)}
+                          className={`shrink-0 ${layer.pinned ? 'text-amber-500' : 'text-neutral-300 hover:text-neutral-500'}`}
+                          aria-label={layer.pinned ? `Unpin ${layer.name}` : `Pin ${layer.name} to top`}
+                          title={layer.pinned ? 'Pinned to top — click to unpin' : 'Click to pin to top'}
+                        >
+                          <PinIcon className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => startRename(layer)}
+                          className={`text-sm font-medium truncate text-left hover:underline ${layer.visible ? 'text-neutral-900' : 'text-neutral-400'}`}
+                          title="Click to rename"
+                        >
+                          {layer.name}
+                        </button>
+                        {!layer.owned && (
+                          <span className="text-[10px] font-medium uppercase tracking-wide text-neutral-400 bg-neutral-100 rounded px-1.5 py-0.5 shrink-0">
+                            Shared
+                          </span>
+                        )}
+                      </span>
+                    )}
+                    <span className="text-xs text-neutral-400">
+                      {layer.locations.length} location{layer.locations.length === 1 ? '' : 's'}
                     </span>
-                  )}
-                  <span className="text-xs text-neutral-400">
-                    {layer.locations.length} location{layer.locations.length === 1 ? '' : 's'}
-                  </span>
-                </div>
+                  </div>
 
-                <button
-                  onClick={() => handleShare(layer)}
-                  disabled={sharingId === layer.id}
-                  className="p-1.5 rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 shrink-0 disabled:opacity-50"
-                  aria-label={`Share ${layer.name}`}
-                  title="Copy share link"
-                >
-                  {copiedId === layer.id ? (
-                    <CheckIcon className="w-4 h-4 text-green-600" />
-                  ) : (
-                    <ShareIcon className={`w-4 h-4 ${sharingId === layer.id ? 'animate-pulse' : ''}`} />
-                  )}
-                </button>
+                  <button
+                    onClick={() => handleShare(layer)}
+                    disabled={sharingId === layer.id}
+                    className="p-1.5 rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 shrink-0 disabled:opacity-50"
+                    aria-label={`Share ${layer.name}`}
+                    title="Copy share link"
+                  >
+                    {copiedId === layer.id ? (
+                      <CheckIcon className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <ShareIcon className={`w-4 h-4 ${sharingId === layer.id ? 'animate-pulse' : ''}`} />
+                    )}
+                  </button>
 
-                <button
-                  onClick={() => {
-                    if (window.confirm(`Delete layer "${layer.name}"? This can't be undone.`)) onDeleteLayer(layer.id)
-                  }}
-                  className="p-1.5 rounded-full text-neutral-500 hover:bg-red-50 hover:text-red-600 shrink-0"
-                  aria-label={`Delete ${layer.name}`}
-                  title="Delete layer"
-                >
-                  <TrashIcon className="w-4 h-4" />
-                </button>
-              </li>
+                  {!layer.owned && (
+                    <button
+                      onClick={() => setDuplicatingId((id) => (id === layer.id ? null : layer.id))}
+                      className={`p-1.5 rounded-full shrink-0 transition-colors ${duplicatingId === layer.id ? 'bg-neutral-100 text-neutral-800' : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800'}`}
+                      aria-label={`Insert all locations from ${layer.name} into one of your layers`}
+                      title="Insert all locations into an existing layer"
+                    >
+                      <DuplicateIcon className="w-4 h-4" />
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Delete layer "${layer.name}"? This can't be undone.`)) onDeleteLayer(layer.id)
+                    }}
+                    className="p-1.5 rounded-full text-neutral-500 hover:bg-red-50 hover:text-red-600 shrink-0"
+                    aria-label={`Delete ${layer.name}`}
+                    title="Delete layer"
+                  >
+                    <TrashIcon className="w-4 h-4" />
+                  </button>
+                </li>
+
+                {duplicatingId === layer.id && (
+                  <li className="px-5 py-3 bg-neutral-50">
+                    <p className="text-xs font-medium text-neutral-500 mb-1.5">Insert all locations into…</p>
+                    {ownedTargets.length === 0 ? (
+                      <p className="text-xs text-neutral-400">You don't have any layers yet. Create one first.</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {ownedTargets.map((target) => {
+                          const done = duplicatedInto[layer.id] === target.id
+                          return (
+                            <button
+                              key={target.id}
+                              type="button"
+                              onClick={() => {
+                                if (done) return
+                                onDuplicateLayer(layer.id, target.id)
+                                setDuplicatedInto((prev) => ({ ...prev, [layer.id]: target.id }))
+                              }}
+                              disabled={done}
+                              className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-full border transition-colors ${
+                                done ? 'bg-green-50 border-green-300 text-green-700' : 'bg-white border-neutral-300 text-neutral-600'
+                              }`}
+                            >
+                              {done ? <CheckIcon className="w-3 h-3" /> : <PlusIcon className="w-3 h-3" />}
+                              {target.name}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </li>
+                )}
+              </Fragment>
             ))}
           </ul>
         </div>

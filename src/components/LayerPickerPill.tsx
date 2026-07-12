@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { Layer } from '../types'
 import { ChevronDownIcon } from './icons'
+import { sortLayers } from '../lib/sortLayers'
 
 interface LayerPickerPillProps {
   ownedVisibleLayers: Layer[]
@@ -12,6 +13,7 @@ export function LayerPickerPill({ ownedVisibleLayers, activeLayerId, onSelect }:
   const [open, setOpen] = useState(false)
 
   const activeLayer = ownedVisibleLayers.find((l) => l.id === activeLayerId) ?? null
+  const sortedLayers = useMemo(() => sortLayers(ownedVisibleLayers), [ownedVisibleLayers])
 
   if (ownedVisibleLayers.length === 0) {
     return (
@@ -35,20 +37,22 @@ export function LayerPickerPill({ ownedVisibleLayers, activeLayerId, onSelect }:
 
       {open && (
         <div className="mt-1.5 w-56 max-w-[calc(100vw-32px)] bg-white shadow-xl border border-neutral-200 rounded-xl overflow-hidden">
-          {ownedVisibleLayers.map((layer) => (
-            <button
-              key={layer.id}
-              onClick={() => {
-                onSelect(layer.id)
-                setOpen(false)
-              }}
-              className={`w-full text-left px-3.5 py-2.5 text-sm truncate hover:bg-neutral-50 ${
-                layer.id === activeLayerId ? 'font-semibold text-neutral-900' : 'text-neutral-600'
-              }`}
-            >
-              {layer.name}
-            </button>
-          ))}
+          <div className="max-h-64 overflow-y-auto overscroll-contain">
+            {sortedLayers.map((layer) => (
+              <button
+                key={layer.id}
+                onClick={() => {
+                  onSelect(layer.id)
+                  setOpen(false)
+                }}
+                className={`w-full text-left px-3.5 py-2.5 text-sm truncate hover:bg-neutral-50 ${
+                  layer.id === activeLayerId ? 'font-semibold text-neutral-900' : 'text-neutral-600'
+                }`}
+              >
+                {layer.name}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>

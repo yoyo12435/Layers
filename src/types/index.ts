@@ -16,6 +16,7 @@ export interface Layer {
   locations: Location[]
   visible: boolean
   owned: boolean
+  pinned?: boolean
 }
 
 export const CATEGORY_COLORS: Record<Category, string> = {

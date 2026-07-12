@@ -38,6 +38,8 @@ function MapApp({ user, onSignOut }: MapAppProps) {
     deleteLayer,
     renameLayer,
     toggleLayerVisibility,
+    toggleLayerPinned,
+    duplicateLayerLocations,
     addLocation,
     deleteLocation,
     setLocationLayers,
@@ -283,9 +285,11 @@ function MapApp({ user, onSignOut }: MapAppProps) {
           layers={layers}
           onClose={() => setPanelOpen(false)}
           onToggleVisibility={toggleLayerVisibility}
+          onTogglePinned={toggleLayerPinned}
           onDeleteLayer={deleteLayer}
           onRenameLayer={renameLayer}
           onCreateLayer={handleCreateLayer}
+          onDuplicateLayer={duplicateLayerLocations}
           pinnedLayer={nearbyLayer}
           onTogglePinnedVisible={toggleNearbyVisible}
           pinnedLoading={nearbyLoading}
