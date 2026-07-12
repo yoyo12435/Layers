@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { FabButton } from './FabButton'
 import { LocateIcon } from './icons'
-import { getCurrentPosition } from '../lib/geolocation'
+import { geolocationErrorMessage, getCurrentPosition } from '../lib/geolocation'
 import type { GeoPosition } from '../lib/geolocation'
 
 interface LocateControlProps {
@@ -18,8 +18,8 @@ export function LocateControl({ onLocated }: LocateControlProps) {
     try {
       const position = await getCurrentPosition()
       onLocated(position)
-    } catch {
-      setError("Couldn't get your location. Check location permissions.")
+    } catch (err) {
+      setError(geolocationErrorMessage(err))
     } finally {
       setLocating(false)
     }
@@ -28,7 +28,7 @@ export function LocateControl({ onLocated }: LocateControlProps) {
   return (
     <div className="absolute bottom-6 right-4 z-[500] flex flex-col items-end gap-2">
       {error && (
-        <div className="bg-neutral-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg max-w-[220px]">{error}</div>
+        <div className="bg-neutral-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg max-w-[260px]">{error}</div>
       )}
       <FabButton onClick={handleClick} label="Find my location" active={locating}>
         <LocateIcon className={`w-5 h-5 ${locating ? 'animate-spin' : ''}`} />

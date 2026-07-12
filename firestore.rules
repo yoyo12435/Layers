@@ -4,5 +4,14 @@ service cloud.firestore {
     match /users/{userId}/layers/{layerId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+
+    // Short-link share snapshots: readable by anyone with the link (including
+    // signed-out visitors), only creatable by signed-in users, and immutable
+    // once published.
+    match /sharedLayers/{shareId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if false;
+    }
   }
 }

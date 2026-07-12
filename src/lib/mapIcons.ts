@@ -3,9 +3,14 @@ import { CATEGORY_COLORS, type Category } from '../types'
 
 const cache = new Map<string, L.DivIcon>()
 
+// Drawn on a 30x40 grid, then scaled up 10% at render time via iconSize.
+const RENDER_SIZE: [number, number] = [33, 44]
+const RENDER_ANCHOR: [number, number] = [16.5, 41.8]
+const RENDER_POPUP_ANCHOR: [number, number] = [0, -35.2]
+
 function pinSvg(color: string, outlined: boolean): string {
   const ring = outlined ? ' stroke="white" stroke-width="1.5"' : ''
-  return `<svg width="30" height="40" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg">
+  return `<svg width="${RENDER_SIZE[0]}" height="${RENDER_SIZE[1]}" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg">
     <ellipse cx="15" cy="36" rx="5" ry="2.2" fill="rgba(15,15,15,0.35)" stroke="white" stroke-width="1.5"/>
     <polygon points="15,7 24,16 15,34 6,16" fill="${color}"${ring} stroke-linejoin="round"/>
     <polygon points="15,7 24,16 15,34" fill="black" fill-opacity="0.15"/>
@@ -20,9 +25,9 @@ export function categoryIcon(category: Category, outlined: boolean): L.DivIcon {
   const icon = L.divIcon({
     className: 'layers-pin',
     html: pinSvg(CATEGORY_COLORS[category], outlined),
-    iconSize: [30, 40],
-    iconAnchor: [15, 38],
-    popupAnchor: [0, -32],
+    iconSize: RENDER_SIZE,
+    iconAnchor: RENDER_ANCHOR,
+    popupAnchor: RENDER_POPUP_ANCHOR,
   })
   cache.set(key, icon)
   return icon
@@ -35,9 +40,9 @@ export function nearbyPinIcon(): L.DivIcon {
   nearbyIconCache = L.divIcon({
     className: 'layers-pin',
     html: pinSvg('#f97316', false),
-    iconSize: [30, 40],
-    iconAnchor: [15, 38],
-    popupAnchor: [0, -32],
+    iconSize: RENDER_SIZE,
+    iconAnchor: RENDER_ANCHOR,
+    popupAnchor: RENDER_POPUP_ANCHOR,
   })
   return nearbyIconCache
 }
@@ -49,9 +54,9 @@ export function pendingPinIcon(): L.DivIcon {
   pendingIconCache = L.divIcon({
     className: 'layers-pin layers-pin-pending',
     html: pinSvg('#6b7280', true),
-    iconSize: [30, 40],
-    iconAnchor: [15, 38],
-    popupAnchor: [0, -32],
+    iconSize: RENDER_SIZE,
+    iconAnchor: RENDER_ANCHOR,
+    popupAnchor: RENDER_POPUP_ANCHOR,
   })
   return pendingIconCache
 }

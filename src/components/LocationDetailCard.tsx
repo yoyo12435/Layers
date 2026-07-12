@@ -1,7 +1,8 @@
-import type { Location } from '../types'
+import { useState } from 'react'
+import type { Layer, Location } from '../types'
 import { CATEGORY_COLORS, CATEGORY_LABELS } from '../types'
 import { StarRating } from './StarRating'
-import { CarIcon, TrashIcon, WalkIcon, XIcon } from './icons'
+import { CarIcon, CheckIcon, PlusIcon, TrashIcon, WalkIcon, XIcon } from './icons'
 import { googleMapsWalkUrl, wazeDriveUrl } from '../lib/navigate'
 
 interface LocationDetailCardProps {
@@ -9,10 +10,18 @@ interface LocationDetailCardProps {
   layerName: string
   onClose: () => void
   onDelete?: () => void
+  ownedLayers?: Layer[]
+  onAddToLayer?: (layerId: string) => void
 }
 
-export function LocationDetailCard({ location, layerName, onClose, onDelete }: LocationDetailCardProps) {
+export function LocationDetailCard({ location, layerName, onClose, onDelete, ownedLayers, onAddToLayer }: LocationDetailCardProps) {
   const color = CATEGORY_COLORS[location.category]
+  const [addedLayerIds, setAddedLayerIds] = useState<Set<string>>(new Set())
+
+  const handleAdd = (layerId: string) => {
+    onAddToLayer?.(layerId)
+    setAddedLayerIds((prev) => new Set(prev).add(layerId))
+  }
 
   return (
     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[500] w-[min(380px,calc(100vw-2rem))]">
@@ -49,6 +58,31 @@ export function LocationDetailCard({ location, layerName, onClose, onDelete }: L
             {CATEGORY_LABELS[location.category]}
           </span>
         </div>
+
+        {ownedLayers && ownedLayers.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-neutral-100">
+            <p className="text-xs font-medium text-neutral-500 mb-1.5">Add to my layer</p>
+            <div className="flex flex-wrap gap-1.5">
+              {ownedLayers.map((l) => {
+                const added = addedLayerIds.has(l.id)
+                return (
+                  <button
+                    key={l.id}
+                    type="button"
+                    onClick={() => !added && handleAdd(l.id)}
+                    disabled={added}
+                    className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-full border transition-colors ${
+                      added ? 'bg-green-50 border-green-300 text-green-700' : 'bg-white border-neutral-300 text-neutral-600'
+                    }`}
+                  >
+                    {added ? <CheckIcon className="w-3 h-3" /> : <PlusIcon className="w-3 h-3" />}
+                    {l.name}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="mt-3 flex items-center gap-2 pt-3 border-t border-neutral-100">
           <a

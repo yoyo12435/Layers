@@ -29,6 +29,7 @@ export function LayersPanel({
   pinnedTooZoomedOut,
 }: LayersPanelProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [sharingId, setSharingId] = useState<string | null>(null)
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
   const [creatingLayer, setCreatingLayer] = useState(false)
@@ -42,14 +43,21 @@ export function LayersPanel({
   }
 
   const handleShare = async (layer: Layer) => {
-    const url = buildShareUrl(layer)
+    setSharingId(layer.id)
     try {
-      await navigator.clipboard.writeText(url)
+      const url = await buildShareUrl(layer)
+      try {
+        await navigator.clipboard.writeText(url)
+      } catch {
+        window.prompt('Copy this share link:', url)
+      }
+      setCopiedId(layer.id)
+      setTimeout(() => setCopiedId((id) => (id === layer.id ? null : id)), 1800)
     } catch {
-      window.prompt('Copy this share link:', url)
+      window.alert("Couldn't create a share link. Please try again.")
+    } finally {
+      setSharingId(null)
     }
-    setCopiedId(layer.id)
-    setTimeout(() => setCopiedId((id) => (id === layer.id ? null : id)), 1800)
   }
 
   const startRename = (layer: Layer) => {
@@ -188,11 +196,16 @@ export function LayersPanel({
 
                 <button
                   onClick={() => handleShare(layer)}
-                  className="p-1.5 rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 shrink-0"
+                  disabled={sharingId === layer.id}
+                  className="p-1.5 rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 shrink-0 disabled:opacity-50"
                   aria-label={`Share ${layer.name}`}
                   title="Copy share link"
                 >
-                  {copiedId === layer.id ? <CheckIcon className="w-4 h-4 text-green-600" /> : <ShareIcon className="w-4 h-4" />}
+                  {copiedId === layer.id ? (
+                    <CheckIcon className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <ShareIcon className={`w-4 h-4 ${sharingId === layer.id ? 'animate-pulse' : ''}`} />
+                  )}
                 </button>
 
                 <button

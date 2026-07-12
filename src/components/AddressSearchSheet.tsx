@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { GeocodeResult } from '../lib/geocode'
 import { searchPlaces } from '../lib/geocode'
-import { getCurrentPosition } from '../lib/geolocation'
+import { geolocationErrorMessage, getCurrentPosition } from '../lib/geolocation'
 import { LocateIcon, SearchIcon, XIcon } from './icons'
 
 interface AddressSearchSheetProps {
@@ -15,6 +15,7 @@ export function AddressSearchSheet({ activeLayerName, onSelect, onClose }: Addre
   const [results, setResults] = useState<GeocodeResult[]>([])
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [locating, setLocating] = useState(false)
+  const [locateError, setLocateError] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
@@ -47,11 +48,12 @@ export function AddressSearchSheet({ activeLayerName, onSelect, onClose }: Addre
 
   const handleUseCurrentLocation = async () => {
     setLocating(true)
+    setLocateError(null)
     try {
       const pos = await getCurrentPosition()
       onSelect({ displayName: 'Your current location', shortName: 'Current location', lat: pos.lat, lng: pos.lng })
-    } catch {
-      setStatus('error')
+    } catch (err) {
+      setLocateError(geolocationErrorMessage(err))
     } finally {
       setLocating(false)
     }
@@ -87,6 +89,7 @@ export function AddressSearchSheet({ activeLayerName, onSelect, onClose }: Addre
                 <LocateIcon className={`w-4 h-4 shrink-0 ${locating ? 'animate-spin' : ''}`} />
                 {locating ? 'Finding your location…' : 'Use current location'}
               </button>
+              {locateError && <p className="text-xs text-red-500 mb-2">{locateError}</p>}
 
               <div className="flex items-center gap-2 border border-neutral-300 rounded-xl px-3 py-2.5">
                 <SearchIcon className="w-4 h-4 text-neutral-400 shrink-0" />

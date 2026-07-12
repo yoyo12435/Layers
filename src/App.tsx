@@ -19,7 +19,7 @@ import { SettingsIcon } from './components/icons'
 import { useAuth } from './lib/useAuth'
 import { useCloudLayers } from './lib/useCloudLayers'
 import { useNearbyLayer, NEARBY_LAYER_ID } from './lib/useNearbyLayer'
-import { readSharedLayerFromUrl } from './lib/share'
+import { hasShareParam, readSharedLayerFromUrl } from './lib/share'
 import type { GeoPosition } from './lib/geolocation'
 import type { GeocodeResult } from './lib/geocode'
 import type { Layer } from './types'
@@ -246,6 +246,7 @@ function MapApp({ user, onSignOut }: MapAppProps) {
 
       {selected && selectedLayer && (
         <LocationDetailCard
+          key={selected.location.id}
           location={selected.location}
           layerName={selectedLayer.name}
           onClose={() => setSelected(null)}
@@ -255,6 +256,15 @@ function MapApp({ user, onSignOut }: MapAppProps) {
               : () => {
                   deleteLocation(selected.layerId, selected.location.id)
                   setSelected(null)
+                }
+          }
+          ownedLayers={selectedLayer.owned ? undefined : ownedLayers}
+          onAddToLayer={
+            selectedLayer.owned
+              ? undefined
+              : (layerId) => {
+                  const { id: _id, ...fields } = selected.location
+                  addLocation(layerId, fields)
                 }
           }
         />
@@ -292,10 +302,31 @@ function MapApp({ user, onSignOut }: MapAppProps) {
 
 function App() {
   const { user, loading, signInWithGoogle, continueWithEmail, signOut, configured, error } = useAuth()
-  const [sharedPreview] = useState(() => readSharedLayerFromUrl())
+  const [sharedPreview, setSharedPreview] = useState<Layer | null>(null)
+  const [previewFetched, setPreviewFetched] = useState(false)
+
+  useEffect(() => {
+    // Signed-in users get a shared layer imported automatically by
+    // useCloudLayers — this preview fetch is only for signed-out visitors.
+    if (loading || user) return
+    if (!hasShareParam()) {
+      setPreviewFetched(true)
+      return
+    }
+    let cancelled = false
+    readSharedLayerFromUrl().then((layer) => {
+      if (cancelled) return
+      setSharedPreview(layer)
+      setPreviewFetched(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [loading, user])
 
   if (loading) return <LoadingScreen />
   if (!user) {
+    if (hasShareParam() && !previewFetched) return <LoadingScreen />
     if (sharedPreview) {
       return (
         <SharedLayerView
