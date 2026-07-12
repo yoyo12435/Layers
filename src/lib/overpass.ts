@@ -24,9 +24,30 @@ interface OverpassElement {
   tags?: Record<string, string>
 }
 
+const AMENITIES = ['restaurant', 'cafe', 'fast_food', 'bar', 'pub', 'nightclub']
+
+const AMENITY_CATEGORY: Record<string, Category> = {
+  restaurant: 'restaurant',
+  cafe: 'restaurant',
+  fast_food: 'restaurant',
+  bar: 'entertainment',
+  pub: 'entertainment',
+  nightclub: 'entertainment',
+}
+
+const AMENITY_LABEL: Record<string, string> = {
+  restaurant: 'Restaurant',
+  cafe: 'Cafe',
+  fast_food: 'Fast food',
+  bar: 'Bar',
+  pub: 'Pub',
+  nightclub: 'Nightclub',
+}
+
 export async function fetchNearbyPlaces(bounds: OverpassBounds, signal?: AbortSignal): Promise<OsmPlace[]> {
   const bbox = `${bounds.south},${bounds.west},${bounds.north},${bounds.east}`
-  const query = `[out:json][timeout:15];(node["amenity"="restaurant"](${bbox});way["amenity"="restaurant"](${bbox}););out center 60;`
+  const clauses = AMENITIES.map((a) => `node["amenity"="${a}"](${bbox});way["amenity"="${a}"](${bbox});`).join('')
+  const query = `[out:json][timeout:15];(${clauses});out center 90;`
 
   const res = await fetch('https://overpass-api.de/api/interpreter', {
     method: 'POST',
@@ -42,10 +63,11 @@ export async function fetchNearbyPlaces(bounds: OverpassBounds, signal?: AbortSi
     const lng = el.lon ?? el.center?.lon
     if (lat == null || lng == null) continue
     const tags = el.tags ?? {}
-    const category: Category = 'restaurant'
+    const amenity = tags.amenity ?? 'restaurant'
+    const category: Category = AMENITY_CATEGORY[amenity] ?? 'other'
     places.push({
       id: `osm-${el.type}-${el.id}`,
-      name: tags.name || 'Restaurant',
+      name: tags.name || AMENITY_LABEL[amenity] || 'Place',
       category,
       lat,
       lng,

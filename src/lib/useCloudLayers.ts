@@ -27,8 +27,13 @@ export function useCloudLayers(uid: string | null) {
     const shared = readSharedLayerFromUrl()
     if (!shared) return
     clearShareParamFromUrl()
-    setDoc(doc(layersRef, shared.id), {
+    // Always import as a brand-new doc, even if you're opening your own
+    // share link — reusing the original layer's id would overwrite (and
+    // flip the ownership of) the layer you already own.
+    const importedId = uuid()
+    setDoc(doc(layersRef, importedId), {
       ...shared,
+      id: importedId,
       visible: true,
       owned: false,
       createdAt: Date.now(),

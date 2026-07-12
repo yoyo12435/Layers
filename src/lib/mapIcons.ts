@@ -24,6 +24,20 @@ export function categoryIcon(category: Category): L.DivIcon {
   return icon
 }
 
+let nearbyIconCache: L.DivIcon | null = null
+
+export function nearbyPinIcon(): L.DivIcon {
+  if (nearbyIconCache) return nearbyIconCache
+  nearbyIconCache = L.divIcon({
+    className: 'layers-pin',
+    html: pinSvg('#f97316', 'white'),
+    iconSize: [30, 40],
+    iconAnchor: [15, 40],
+    popupAnchor: [0, -36],
+  })
+  return nearbyIconCache
+}
+
 let pendingIconCache: L.DivIcon | null = null
 
 export function pendingPinIcon(): L.DivIcon {

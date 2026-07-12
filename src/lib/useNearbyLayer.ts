@@ -61,7 +61,7 @@ export function useNearbyLayer(bounds: LatLngBounds | null) {
 
   const nearbyLayer: Layer = {
     id: NEARBY_LAYER_ID,
-    name: 'Nearby restaurants',
+    name: 'Nearby locations',
     locations,
     visible,
     owned: false,

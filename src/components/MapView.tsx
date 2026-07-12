@@ -3,8 +3,9 @@ import { Circle, MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'r
 import L from 'leaflet'
 import type { LatLngBounds, LatLngExpression, LatLngTuple } from 'leaflet'
 import type { Location } from '../types'
-import { categoryIcon, currentLocationIcon, pendingPinIcon } from '../lib/mapIcons'
+import { categoryIcon, currentLocationIcon, nearbyPinIcon, pendingPinIcon } from '../lib/mapIcons'
 import type { GeoPosition } from '../lib/geolocation'
+import { NEARBY_LAYER_ID } from '../lib/useNearbyLayer'
 
 export interface FlatLocation {
   location: Location
@@ -103,7 +104,7 @@ export function MapView({ locations, editMode, pendingPoint, currentLocation, fl
           <Marker
             key={location.id}
             position={[location.lat, location.lng]}
-            icon={categoryIcon(location.category)}
+            icon={layerId === NEARBY_LAYER_ID ? nearbyPinIcon() : categoryIcon(location.category)}
             eventHandlers={{
               click: (e) => {
                 L.DomEvent.stopPropagation(e)

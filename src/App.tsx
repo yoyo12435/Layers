@@ -13,11 +13,13 @@ import { LocationDetailCard } from './components/LocationDetailCard'
 import { AddressSearchSheet } from './components/AddressSearchSheet'
 import { SettingsPanel } from './components/SettingsPanel'
 import { SignInScreen } from './components/SignInScreen'
+import { SharedLayerView } from './components/SharedLayerView'
 import { LoadingScreen } from './components/LoadingScreen'
 import { SettingsIcon } from './components/icons'
 import { useAuth } from './lib/useAuth'
 import { useCloudLayers } from './lib/useCloudLayers'
 import { useNearbyLayer, NEARBY_LAYER_ID } from './lib/useNearbyLayer'
+import { readSharedLayerFromUrl } from './lib/share'
 import type { GeoPosition } from './lib/geolocation'
 import type { GeocodeResult } from './lib/geocode'
 import type { Layer } from './types'
@@ -286,9 +288,21 @@ function MapApp({ user, onSignOut }: MapAppProps) {
 
 function App() {
   const { user, loading, signInWithGoogle, continueWithEmail, signOut, configured, error } = useAuth()
+  const [sharedPreview] = useState(() => readSharedLayerFromUrl())
 
   if (loading) return <LoadingScreen />
   if (!user) {
+    if (sharedPreview) {
+      return (
+        <SharedLayerView
+          layer={sharedPreview}
+          configured={configured}
+          error={error}
+          onSignInWithGoogle={signInWithGoogle}
+          onContinueWithEmail={continueWithEmail}
+        />
+      )
+    }
     return (
       <SignInScreen
         configured={configured}
