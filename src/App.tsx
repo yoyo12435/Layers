@@ -17,7 +17,6 @@ import { LoadingScreen } from './components/LoadingScreen'
 import { SettingsIcon } from './components/icons'
 import { useAuth } from './lib/useAuth'
 import { useCloudLayers } from './lib/useCloudLayers'
-import { useDarkMode } from './lib/useDarkMode'
 import { useNearbyLayer, NEARBY_LAYER_ID } from './lib/useNearbyLayer'
 import type { GeoPosition } from './lib/geolocation'
 import type { GeocodeResult } from './lib/geocode'
@@ -26,11 +25,9 @@ import type { Layer } from './types'
 interface MapAppProps {
   user: User
   onSignOut: () => void
-  dark: boolean
-  onToggleDark: () => void
 }
 
-function MapApp({ user, onSignOut, dark, onToggleDark }: MapAppProps) {
+function MapApp({ user, onSignOut }: MapAppProps) {
   const {
     layers,
     importedLayerName,
@@ -40,8 +37,9 @@ function MapApp({ user, onSignOut, dark, onToggleDark }: MapAppProps) {
     renameLayer,
     toggleLayerVisibility,
     addLocation,
-    updateLocation,
     deleteLocation,
+    setLocationLayers,
+    deleteLocationEverywhere,
   } = useCloudLayers(user.uid)
 
   const [panelOpen, setPanelOpen] = useState(false)
@@ -71,7 +69,16 @@ function MapApp({ user, onSignOut, dark, onToggleDark }: MapAppProps) {
   const flatLocations = useMemo<FlatLocation[]>(() => {
     const accountLocations = visibleLayers.flatMap((layer) => layer.locations.map((location) => ({ location, layerId: layer.id })))
     const nearbyLocations = nearbyLayer.visible ? nearbyLayer.locations.map((location) => ({ location, layerId: NEARBY_LAYER_ID })) : []
-    return [...accountLocations, ...nearbyLocations]
+    // A location can belong to several layers at once; render one pin per
+    // unique location rather than a stacked duplicate per layer membership.
+    const seen = new Set<string>()
+    const deduped: FlatLocation[] = []
+    for (const item of [...accountLocations, ...nearbyLocations]) {
+      if (seen.has(item.location.id)) continue
+      seen.add(item.location.id)
+      deduped.push(item)
+    }
+    return deduped
   }, [visibleLayers, nearbyLayer])
 
   const findLayerById = (id: string): Layer | null => (id === NEARBY_LAYER_ID ? nearbyLayer : layers.find((l) => l.id === id) ?? null)
@@ -79,6 +86,9 @@ function MapApp({ user, onSignOut, dark, onToggleDark }: MapAppProps) {
   const activeLayer = ownedVisibleLayers.find((l) => l.id === activeLayerId) ?? null
   const selectedLayer = selected ? findLayerById(selected.layerId) : null
   const editingLayer = editingItem ? findLayerById(editingItem.layerId) : null
+  const editingLayerIds = editingItem
+    ? ownedLayers.filter((l) => l.locations.some((loc) => loc.id === editingItem.location.id)).map((l) => l.id)
+    : []
 
   const clearInteractions = () => {
     setPendingPoint(null)
@@ -133,7 +143,7 @@ function MapApp({ user, onSignOut, dark, onToggleDark }: MapAppProps) {
   }
 
   return (
-    <div className="h-svh w-full relative overflow-hidden bg-neutral-100 dark:bg-neutral-950">
+    <div className="h-svh w-full relative overflow-hidden bg-neutral-100">
       <MapView
         locations={flatLocations}
         editMode={editMode}
@@ -174,11 +184,11 @@ function MapApp({ user, onSignOut, dark, onToggleDark }: MapAppProps) {
 
       {importedLayerName && (
         <div className="absolute top-20 left-4 right-4 z-[600] flex justify-center">
-          <div className="flex items-center gap-3 bg-white dark:bg-neutral-900 shadow-lg border border-green-200 dark:border-green-800 text-green-800 dark:text-green-400 text-sm rounded-full px-4 py-2 max-w-full">
+          <div className="flex items-center gap-3 bg-white shadow-lg border border-green-200 text-green-800 text-sm rounded-full px-4 py-2 max-w-full">
             <span className="truncate">
               Added <strong>{importedLayerName}</strong> from a share link
             </span>
-            <button onClick={clearImportedLayerName} className="text-green-700 dark:text-green-400 hover:underline font-medium shrink-0">
+            <button onClick={clearImportedLayerName} className="text-green-700 hover:underline font-medium shrink-0">
               Dismiss
             </button>
           </div>
@@ -187,7 +197,7 @@ function MapApp({ user, onSignOut, dark, onToggleDark }: MapAppProps) {
 
       {layers.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-8">
-          <p className="bg-white/95 dark:bg-neutral-900/95 border border-neutral-200 dark:border-neutral-700 rounded-xl px-5 py-3 text-sm text-neutral-500 dark:text-neutral-400 shadow-sm text-center">
+          <p className="bg-white/95 border border-neutral-200 rounded-xl px-5 py-3 text-sm text-neutral-500 shadow-sm text-center">
             Open Layers (top right) to create your first layer, then tap Edit to start dropping pins.
           </p>
         </div>
@@ -214,20 +224,15 @@ function MapApp({ user, onSignOut, dark, onToggleDark }: MapAppProps) {
       {editingItem && editingLayer && (
         <LocationEditCard
           location={editingItem.location}
-          layerId={editingItem.layerId}
           ownedLayers={ownedLayers}
-          onSave={(updates, targetLayerId) => {
-            if (targetLayerId !== editingItem.layerId) {
-              deleteLocation(editingItem.layerId, editingItem.location.id)
-              addLocation(targetLayerId, { ...updates, lat: editingItem.location.lat, lng: editingItem.location.lng })
-            } else {
-              updateLocation(editingItem.layerId, editingItem.location.id, updates)
-            }
+          initialLayerIds={editingLayerIds}
+          onSave={(updates, layerIds) => {
+            setLocationLayers(editingItem.location.id, { ...updates, lat: editingItem.location.lat, lng: editingItem.location.lng }, layerIds)
             setEditingItem(null)
           }}
           onCancel={() => setEditingItem(null)}
           onDelete={() => {
-            deleteLocation(editingItem.layerId, editingItem.location.id)
+            deleteLocationEverywhere(editingItem.location.id)
             setEditingItem(null)
           }}
         />
@@ -273,13 +278,7 @@ function MapApp({ user, onSignOut, dark, onToggleDark }: MapAppProps) {
       )}
 
       {settingsOpen && (
-        <SettingsPanel
-          user={user}
-          dark={dark}
-          onToggleDark={onToggleDark}
-          onSignOut={onSignOut}
-          onClose={() => setSettingsOpen(false)}
-        />
+        <SettingsPanel user={user} onSignOut={onSignOut} onClose={() => setSettingsOpen(false)} />
       )}
     </div>
   )
@@ -287,7 +286,6 @@ function MapApp({ user, onSignOut, dark, onToggleDark }: MapAppProps) {
 
 function App() {
   const { user, loading, signInWithGoogle, continueWithEmail, signOut, configured, error } = useAuth()
-  const { dark, toggleDark } = useDarkMode()
 
   if (loading) return <LoadingScreen />
   if (!user) {
@@ -301,7 +299,7 @@ function App() {
     )
   }
 
-  return <MapApp user={user} onSignOut={signOut} dark={dark} onToggleDark={toggleDark} />
+  return <MapApp user={user} onSignOut={signOut} />
 }
 
 export default App

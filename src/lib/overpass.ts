@@ -26,7 +26,7 @@ interface OverpassElement {
 
 export async function fetchNearbyPlaces(bounds: OverpassBounds, signal?: AbortSignal): Promise<OsmPlace[]> {
   const bbox = `${bounds.south},${bounds.west},${bounds.north},${bounds.east}`
-  const query = `[out:json][timeout:15];(node["amenity"="restaurant"](${bbox});way["amenity"="restaurant"](${bbox});node["leisure"="park"](${bbox});way["leisure"="park"](${bbox}););out center 60;`
+  const query = `[out:json][timeout:15];(node["amenity"="restaurant"](${bbox});way["amenity"="restaurant"](${bbox}););out center 60;`
 
   const res = await fetch('https://overpass-api.de/api/interpreter', {
     method: 'POST',
@@ -42,10 +42,10 @@ export async function fetchNearbyPlaces(bounds: OverpassBounds, signal?: AbortSi
     const lng = el.lon ?? el.center?.lon
     if (lat == null || lng == null) continue
     const tags = el.tags ?? {}
-    const category: Category = tags.amenity === 'restaurant' ? 'restaurant' : 'park'
+    const category: Category = 'restaurant'
     places.push({
       id: `osm-${el.type}-${el.id}`,
-      name: tags.name || (category === 'restaurant' ? 'Restaurant' : 'Park'),
+      name: tags.name || 'Restaurant',
       category,
       lat,
       lng,

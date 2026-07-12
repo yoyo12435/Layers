@@ -22,13 +22,13 @@ export function SignInScreen({ configured, error, onSignInWithGoogle, onContinue
   }
 
   return (
-    <div className="h-svh w-full overflow-y-auto bg-neutral-50 dark:bg-neutral-950">
+    <div className="h-svh w-full overflow-y-auto bg-neutral-50">
       <div className="min-h-full flex flex-col items-center px-6 pt-10 pb-10">
-        <div className="w-12 h-12 rounded-2xl bg-neutral-900 dark:bg-white flex items-center justify-center mb-4">
-          <LayersIcon className="w-6 h-6 text-white dark:text-neutral-900" />
+        <div className="w-12 h-12 rounded-2xl bg-neutral-900 flex items-center justify-center mb-4">
+          <LayersIcon className="w-6 h-6 text-white" />
         </div>
-        <h1 className="text-xl font-semibold text-neutral-900 dark:text-white mb-1.5">Create your account</h1>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6 text-center max-w-xs">
+        <h1 className="text-xl font-semibold text-neutral-900 mb-1.5">Create your account</h1>
+        <p className="text-sm text-neutral-500 mb-6 text-center max-w-xs">
           Sign in to see your layers and pins, and keep them synced across your devices.
         </p>
 
@@ -43,7 +43,7 @@ export function SignInScreen({ configured, error, onSignInWithGoogle, onContinue
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email"
-                className="border border-neutral-300 dark:border-neutral-600 dark:bg-neutral-900 dark:text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-800 dark:focus:ring-neutral-400"
+                className="border border-neutral-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-800"
               />
               <input
                 type="password"
@@ -53,12 +53,12 @@ export function SignInScreen({ configured, error, onSignInWithGoogle, onContinue
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
-                className="border border-neutral-300 dark:border-neutral-600 dark:bg-neutral-900 dark:text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-800 dark:focus:ring-neutral-400"
+                className="border border-neutral-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-800"
               />
               <button
                 type="submit"
                 disabled={submitting}
-                className="bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium rounded-xl py-3 disabled:opacity-60"
+                className="bg-neutral-900 text-white text-sm font-medium rounded-xl py-3 disabled:opacity-60"
               >
                 {submitting ? 'Please wait…' : 'Continue'}
               </button>
@@ -69,17 +69,17 @@ export function SignInScreen({ configured, error, onSignInWithGoogle, onContinue
             </p>
 
             <div className="flex items-center gap-3 my-5">
-              <div className="h-px flex-1 bg-neutral-200 dark:bg-neutral-800" />
+              <div className="h-px flex-1 bg-neutral-200" />
               <span className="text-xs text-neutral-400">or</span>
-              <div className="h-px flex-1 bg-neutral-200 dark:bg-neutral-800" />
+              <div className="h-px flex-1 bg-neutral-200" />
             </div>
 
             <button
               onClick={onSignInWithGoogle}
-              className="w-full flex items-center justify-center gap-3 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl py-3 shadow-sm active:bg-neutral-50 dark:active:bg-neutral-800"
+              className="w-full flex items-center justify-center gap-3 bg-white border border-neutral-300 rounded-xl py-3 shadow-sm active:bg-neutral-50"
             >
               <GoogleIcon className="w-5 h-5" />
-              <span className="text-sm font-medium text-neutral-800 dark:text-neutral-100">Sign in with Google</span>
+              <span className="text-sm font-medium text-neutral-800">Sign in with Google</span>
             </button>
           </div>
         ) : (
@@ -89,7 +89,7 @@ export function SignInScreen({ configured, error, onSignInWithGoogle, onContinue
         )}
 
         {error && (
-          <p className="mt-4 text-xs text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 rounded-xl px-4 py-3 max-w-xs text-center">
+          <p className="mt-4 text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3 max-w-xs text-center">
             {error}
           </p>
         )}

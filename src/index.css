@@ -1,8 +1,6 @@
 @import 'tailwindcss';
 @import 'leaflet/dist/leaflet.css';
 
-@custom-variant dark (&:where(.dark, .dark *));
-
 @keyframes layers-panel-in {
   from {
     transform: translateX(100%);
@@ -31,10 +29,6 @@
 
 body {
   margin: 0;
-}
-
-html.dark {
-  color-scheme: dark;
 }
 
 .layers-current-location-dot {

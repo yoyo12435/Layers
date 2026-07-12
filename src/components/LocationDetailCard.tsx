@@ -16,28 +16,28 @@ export function LocationDetailCard({ location, layerName, onClose, onDelete }: L
 
   return (
     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[500] w-[min(380px,calc(100vw-2rem))]">
-      <div className="relative bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl p-4 pl-5 shadow-xl">
+      <div className="relative bg-white border border-neutral-200 rounded-xl p-4 pl-5 shadow-xl">
         <span className="absolute left-0 top-4 bottom-4 w-1 rounded-full" style={{ backgroundColor: color }} />
 
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="text-xs text-neutral-400 truncate">{layerName}</p>
-            <h3 className="font-semibold text-lg text-neutral-900 dark:text-white leading-snug">{location.name}</h3>
+            <h3 className="font-semibold text-lg text-neutral-900 leading-snug">{location.name}</h3>
           </div>
           <div className="flex items-center gap-1 shrink-0">
             {onDelete && (
-              <button onClick={onDelete} className="p-1.5 rounded-lg text-neutral-400 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600" aria-label={`Delete ${location.name}`}>
+              <button onClick={onDelete} className="p-1.5 rounded-lg text-neutral-400 hover:bg-red-50 hover:text-red-600" aria-label={`Delete ${location.name}`}>
                 <TrashIcon className="w-4 h-4" />
               </button>
             )}
-            <button onClick={onClose} className="p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800" aria-label="Close">
+            <button onClick={onClose} className="p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-100" aria-label="Close">
               <XIcon className="w-4 h-4" />
             </button>
           </div>
         </div>
 
         {location.description && (
-          <p className="mt-1.5 text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed">{location.description}</p>
+          <p className="mt-1.5 text-sm text-neutral-600 leading-relaxed">{location.description}</p>
         )}
 
         <div className="mt-3 flex items-center justify-between">
@@ -50,7 +50,7 @@ export function LocationDetailCard({ location, layerName, onClose, onDelete }: L
           </span>
         </div>
 
-        <div className="mt-3 flex items-center gap-2 pt-3 border-t border-neutral-100 dark:border-neutral-800">
+        <div className="mt-3 flex items-center gap-2 pt-3 border-t border-neutral-100">
           <a
             href={wazeDriveUrl(location.lat, location.lng)}
             target="_blank"

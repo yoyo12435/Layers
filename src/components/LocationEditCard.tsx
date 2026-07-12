@@ -1,40 +1,52 @@
 import { useState } from 'react'
 import { LocationForm, type LocationDraft } from './LocationForm'
 import type { Layer, Location } from '../types'
+import { CheckIcon } from './icons'
 
 interface LocationEditCardProps {
   location: Location
-  layerId: string
   ownedLayers: Layer[]
-  onSave: (updates: LocationDraft, targetLayerId: string) => void
+  initialLayerIds: string[]
+  onSave: (updates: LocationDraft, layerIds: string[]) => void
   onCancel: () => void
   onDelete: () => void
 }
 
-export function LocationEditCard({ location, layerId, ownedLayers, onSave, onCancel, onDelete }: LocationEditCardProps) {
-  const [targetLayerId, setTargetLayerId] = useState(layerId)
-  const currentLayer = ownedLayers.find((l) => l.id === layerId)
+export function LocationEditCard({ location, ownedLayers, initialLayerIds, onSave, onCancel, onDelete }: LocationEditCardProps) {
+  const [layerIds, setLayerIds] = useState<string[]>(initialLayerIds)
+
+  const toggleLayer = (id: string) => {
+    setLayerIds((prev) => (prev.includes(id) ? prev.filter((l) => l !== id) : [...prev, id]))
+  }
 
   return (
     <div className="absolute top-24 left-1/2 -translate-x-1/2 z-[500] w-[min(360px,calc(100vw-2rem))] max-h-[calc(100%-7rem)] overflow-y-auto">
-      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1.5 text-center">
-        Editing pin in <span className="font-medium text-neutral-700 dark:text-neutral-200">{currentLayer?.name ?? 'this layer'}</span>
-      </p>
-
       {ownedLayers.length > 1 && (
-        <div className="mb-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl px-3.5 py-2.5 flex items-center justify-between gap-2">
-          <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 shrink-0">Move to layer</span>
-          <select
-            value={targetLayerId}
-            onChange={(e) => setTargetLayerId(e.target.value)}
-            className="flex-1 min-w-0 text-sm text-right bg-transparent text-neutral-900 dark:text-white focus:outline-none"
-          >
-            {ownedLayers.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name}
-              </option>
-            ))}
-          </select>
+        <div className="mb-2 bg-white border border-neutral-200 rounded-xl px-3.5 py-3">
+          <p className="text-xs font-medium text-neutral-500 mb-2">In layers</p>
+          <div className="flex flex-wrap gap-1.5">
+            {ownedLayers.map((l) => {
+              const active = layerIds.includes(l.id)
+              return (
+                <button
+                  key={l.id}
+                  type="button"
+                  onClick={() => toggleLayer(l.id)}
+                  className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-full border transition-colors ${
+                    active
+                      ? 'bg-neutral-900 border-neutral-900 text-white'
+                      : 'bg-white border-neutral-300 text-neutral-500'
+                  }`}
+                >
+                  {active && <CheckIcon className="w-3 h-3" />}
+                  {l.name}
+                </button>
+              )
+            })}
+          </div>
+          {layerIds.length === 0 && (
+            <p className="text-xs text-red-500 mt-1.5">Pick at least one layer, or use delete instead.</p>
+          )}
         </div>
       )}
 
@@ -42,7 +54,7 @@ export function LocationEditCard({ location, layerId, ownedLayers, onSave, onCan
         title="Edit location"
         submitLabel="Save changes"
         initial={location}
-        onSubmit={(updates) => onSave(updates, targetLayerId)}
+        onSubmit={(updates) => onSave(updates, layerIds)}
         onCancel={onCancel}
         onDelete={onDelete}
       />

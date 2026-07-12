@@ -105,6 +105,40 @@ export function useCloudLayers(uid: string | null) {
     [layersRef, layers],
   )
 
+  // Adds/updates/removes a single location (matched by id) across whichever
+  // owned layers it should belong to, so the same pin can live in several
+  // layers at once and stay in sync when edited.
+  const setLocationLayers = useCallback(
+    (locationId: string, fields: Omit<Location, 'id'>, layerIds: string[]) => {
+      if (!layersRef) return
+      for (const layer of layers) {
+        if (!layer.owned) continue
+        const hasEntry = layer.locations.some((loc) => loc.id === locationId)
+        const wantEntry = layerIds.includes(layer.id)
+        if (wantEntry) {
+          const newLocations = hasEntry
+            ? layer.locations.map((loc) => (loc.id === locationId ? { ...loc, ...fields } : loc))
+            : [...layer.locations, { id: locationId, ...fields }]
+          updateDoc(doc(layersRef, layer.id), { locations: newLocations })
+        } else if (hasEntry) {
+          updateDoc(doc(layersRef, layer.id), { locations: layer.locations.filter((loc) => loc.id !== locationId) })
+        }
+      }
+    },
+    [layersRef, layers],
+  )
+
+  const deleteLocationEverywhere = useCallback(
+    (locationId: string) => {
+      if (!layersRef) return
+      for (const layer of layers) {
+        if (!layer.locations.some((loc) => loc.id === locationId)) continue
+        updateDoc(doc(layersRef, layer.id), { locations: layer.locations.filter((loc) => loc.id !== locationId) })
+      }
+    },
+    [layersRef, layers],
+  )
+
   return {
     layers,
     importedLayerName,
@@ -116,5 +150,7 @@ export function useCloudLayers(uid: string | null) {
     addLocation,
     updateLocation,
     deleteLocation,
+    setLocationLayers,
+    deleteLocationEverywhere,
   }
 }
