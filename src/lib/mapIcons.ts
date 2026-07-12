@@ -8,7 +8,8 @@ function pinSvg(color: string, outlined: boolean): string {
   return `<svg width="30" height="40" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg">
     <ellipse cx="15" cy="36" rx="5" ry="2.2" fill="rgba(15,15,15,0.35)"${ring}/>
     <polygon points="15,4 24,16 15,34 6,16" fill="${color}"${ring} stroke-linejoin="round"/>
-    <polygon points="15,11.2 18.6,16 15,23.2 11.4,16" fill="white"/>
+    <polygon points="15,4 24,16 15,34" fill="black" fill-opacity="0.15"/>
+    <polygon points="15,12 19,16 15,20 11,16" fill="white"/>
   </svg>`
 }
 
