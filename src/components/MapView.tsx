@@ -10,6 +10,7 @@ import { NEARBY_LAYER_ID } from '../lib/useNearbyLayer'
 export interface FlatLocation {
   location: Location
   layerId: string
+  owned: boolean
 }
 
 interface FlyToRequest {
@@ -100,15 +101,15 @@ export function MapView({ locations, editMode, pendingPoint, currentLocation, fl
         <FitToLocations locations={locations} />
         <FlyToController flyTo={flyTo} />
         <BoundsReporter onBoundsChange={onBoundsChange} />
-        {locations.map(({ location, layerId }) => (
+        {locations.map(({ location, layerId, owned }) => (
           <Marker
             key={location.id}
             position={[location.lat, location.lng]}
-            icon={layerId === NEARBY_LAYER_ID ? nearbyPinIcon() : categoryIcon(location.category)}
+            icon={layerId === NEARBY_LAYER_ID ? nearbyPinIcon() : categoryIcon(location.category, owned)}
             eventHandlers={{
               click: (e) => {
                 L.DomEvent.stopPropagation(e)
-                onMarkerClick({ location, layerId })
+                onMarkerClick({ location, layerId, owned })
               },
             }}
           />

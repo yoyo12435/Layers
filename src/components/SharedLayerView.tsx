@@ -16,7 +16,7 @@ export function SharedLayerView({ layer, configured, error, onSignInWithGoogle, 
   const [selected, setSelected] = useState<FlatLocation | null>(null)
   const [showSignIn, setShowSignIn] = useState(false)
 
-  const flatLocations: FlatLocation[] = layer.locations.map((location) => ({ location, layerId: layer.id }))
+  const flatLocations: FlatLocation[] = layer.locations.map((location) => ({ location, layerId: layer.id, owned: false }))
 
   if (showSignIn) {
     return (

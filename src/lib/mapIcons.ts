@@ -3,24 +3,26 @@ import { CATEGORY_COLORS, type Category } from '../types'
 
 const cache = new Map<string, L.DivIcon>()
 
-function pinSvg(color: string, ringColor: string): string {
-  return `<svg width="30" height="40" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg">
-    <path d="M15 0C6.72 0 0 6.72 0 15c0 11.25 15 25 15 25s15-13.75 15-25C30 6.72 23.28 0 15 0z" fill="${color}" stroke="${ringColor}" stroke-width="2"/>
-    <circle cx="15" cy="15" r="5.5" fill="white"/>
+function pinSvg(color: string, outlined: boolean): string {
+  const ring = outlined ? ' stroke="white" stroke-width="2.5"' : ''
+  return `<svg width="30" height="36" viewBox="0 0 30 36" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="15" cy="28" rx="5" ry="2.2" fill="rgba(15,15,15,0.35)"${ring}/>
+    <rect x="8" y="6" width="14" height="14" rx="3" fill="${color}"${ring} transform="rotate(45 15 13)"/>
   </svg>`
 }
 
-export function categoryIcon(category: Category): L.DivIcon {
-  const cached = cache.get(category)
+export function categoryIcon(category: Category, outlined: boolean): L.DivIcon {
+  const key = `${category}|${outlined}`
+  const cached = cache.get(key)
   if (cached) return cached
   const icon = L.divIcon({
     className: 'layers-pin',
-    html: pinSvg(CATEGORY_COLORS[category], 'white'),
-    iconSize: [30, 40],
-    iconAnchor: [15, 40],
-    popupAnchor: [0, -36],
+    html: pinSvg(CATEGORY_COLORS[category], outlined),
+    iconSize: [30, 36],
+    iconAnchor: [15, 31],
+    popupAnchor: [0, -28],
   })
-  cache.set(category, icon)
+  cache.set(key, icon)
   return icon
 }
 
@@ -30,10 +32,10 @@ export function nearbyPinIcon(): L.DivIcon {
   if (nearbyIconCache) return nearbyIconCache
   nearbyIconCache = L.divIcon({
     className: 'layers-pin',
-    html: pinSvg('#f97316', 'white'),
-    iconSize: [30, 40],
-    iconAnchor: [15, 40],
-    popupAnchor: [0, -36],
+    html: pinSvg('#f97316', false),
+    iconSize: [30, 36],
+    iconAnchor: [15, 31],
+    popupAnchor: [0, -28],
   })
   return nearbyIconCache
 }
@@ -44,10 +46,10 @@ export function pendingPinIcon(): L.DivIcon {
   if (pendingIconCache) return pendingIconCache
   pendingIconCache = L.divIcon({
     className: 'layers-pin layers-pin-pending',
-    html: pinSvg('#6b7280', '#111827'),
-    iconSize: [30, 40],
-    iconAnchor: [15, 40],
-    popupAnchor: [0, -36],
+    html: pinSvg('#6b7280', true),
+    iconSize: [30, 36],
+    iconAnchor: [15, 31],
+    popupAnchor: [0, -28],
   })
   return pendingIconCache
 }

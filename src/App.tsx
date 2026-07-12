@@ -69,8 +69,12 @@ function MapApp({ user, onSignOut }: MapAppProps) {
   }, [activeLayerId, ownedVisibleLayers])
 
   const flatLocations = useMemo<FlatLocation[]>(() => {
-    const accountLocations = visibleLayers.flatMap((layer) => layer.locations.map((location) => ({ location, layerId: layer.id })))
-    const nearbyLocations = nearbyLayer.visible ? nearbyLayer.locations.map((location) => ({ location, layerId: NEARBY_LAYER_ID })) : []
+    const accountLocations = visibleLayers.flatMap((layer) =>
+      layer.locations.map((location) => ({ location, layerId: layer.id, owned: layer.owned })),
+    )
+    const nearbyLocations = nearbyLayer.visible
+      ? nearbyLayer.locations.map((location) => ({ location, layerId: NEARBY_LAYER_ID, owned: false }))
+      : []
     // A location can belong to several layers at once; render one pin per
     // unique location rather than a stacked duplicate per layer membership.
     const seen = new Set<string>()
