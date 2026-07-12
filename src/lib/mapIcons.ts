@@ -4,11 +4,11 @@ import { CATEGORY_COLORS, type Category } from '../types'
 const cache = new Map<string, L.DivIcon>()
 
 function pinSvg(color: string, outlined: boolean): string {
-  const ring = outlined ? ' stroke="white" stroke-width="2.5"' : ''
+  const ring = outlined ? ' stroke="white" stroke-width="1.5"' : ''
   return `<svg width="30" height="40" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="15" cy="36" rx="5" ry="2.2" fill="rgba(15,15,15,0.35)"${ring}/>
-    <polygon points="15,4 24,16 15,34 6,16" fill="${color}"${ring} stroke-linejoin="round"/>
-    <polygon points="15,4 24,16 15,34" fill="black" fill-opacity="0.15"/>
+    <ellipse cx="15" cy="36" rx="5" ry="2.2" fill="rgba(15,15,15,0.35)" stroke="white" stroke-width="1.5"/>
+    <polygon points="15,7 24,16 15,34 6,16" fill="${color}"${ring} stroke-linejoin="round"/>
+    <polygon points="15,7 24,16 15,34" fill="black" fill-opacity="0.15"/>
     <polygon points="15,12 19,16 15,20 11,16" fill="white"/>
   </svg>`
 }
