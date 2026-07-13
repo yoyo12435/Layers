@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { v4 as uuid } from 'uuid'
 import { collection, doc, deleteDoc, onSnapshot, orderBy, query, setDoc, updateDoc, type CollectionReference } from 'firebase/firestore'
 import type { Layer, Location } from '../types'
@@ -108,6 +108,28 @@ export function useCloudLayers(uid: string | null) {
     },
     [layersRef, layers],
   )
+
+  // Keeps published share links in sync: whenever an owned layer that has a
+  // share link changes its name or locations, re-publish the snapshot so
+  // recipients can Refresh at any time without the owner re-sharing. The
+  // first observation of each shareId only seeds the ref (sharing itself
+  // publishes), so app startup doesn't burn a write per shared layer.
+  const publishedRef = useRef<Record<string, string>>({})
+  useEffect(() => {
+    if (!uid) {
+      publishedRef.current = {}
+      return
+    }
+    for (const layer of layers) {
+      if (!layer.owned || !layer.shareId) continue
+      const content = JSON.stringify({ name: layer.name, locations: layer.locations })
+      const prev = publishedRef.current[layer.shareId]
+      publishedRef.current[layer.shareId] = content
+      if (prev !== undefined && prev !== content) {
+        buildShareUrl(layer, uid).catch(() => {})
+      }
+    }
+  }, [layers, uid])
 
   // Publishes/re-publishes a share link. Re-sharing an already-shared layer
   // reuses its shareId and updates the same published doc in place, which is
