@@ -333,14 +333,7 @@ export function LayersPanel({
                       />
                     ) : (
                       <span className="flex items-center gap-1.5 min-w-0">
-                        <button
-                          onClick={() => onTogglePinned(layer.id)}
-                          className={`shrink-0 ${layer.pinned ? 'text-amber-500' : 'text-neutral-300 hover:text-neutral-500'}`}
-                          aria-label={layer.pinned ? `Unpin ${layer.name}` : `Pin ${layer.name} to top`}
-                          title={layer.pinned ? 'Pinned to top — click to unpin' : 'Click to pin to top'}
-                        >
-                          <PinIcon className="w-3.5 h-3.5" />
-                        </button>
+                        {layer.pinned && <PinIcon className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
                         <button
                           onClick={() => startRename(layer)}
                           className={`text-sm font-medium truncate text-left hover:underline ${layer.visible ? 'text-neutral-900' : 'text-neutral-400'}`}
@@ -385,6 +378,17 @@ export function LayersPanel({
                               <ShareIcon className={`w-4 h-4 ${sharingId === layer.id ? 'animate-pulse' : ''}`} />
                             )}
                             {copiedId === layer.id ? 'Copied!' : 'Share'}
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setMenuOpenId(null)
+                              onTogglePinned(layer.id)
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-left text-neutral-700 hover:bg-neutral-50"
+                          >
+                            <PinIcon className={`w-4 h-4 ${layer.pinned ? 'text-amber-500' : ''}`} />
+                            {layer.pinned ? 'Unpin' : 'Pin'}
                           </button>
 
                           {!layer.owned && (
