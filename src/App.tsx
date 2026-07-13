@@ -40,6 +40,8 @@ function MapApp({ user, onSignOut }: MapAppProps) {
     toggleLayerVisibility,
     toggleLayerPinned,
     toggleLayerArchived,
+    shareLayer,
+    refreshLayer,
     duplicateLayerLocations,
     addLocation,
     deleteLocation,
@@ -294,6 +296,8 @@ function MapApp({ user, onSignOut }: MapAppProps) {
           onRenameLayer={renameLayer}
           onCreateLayer={handleCreateLayer}
           onDuplicateLayer={duplicateLayerLocations}
+          onShareLayer={shareLayer}
+          onRefreshLayer={refreshLayer}
           pinnedLayer={nearbyLayer}
           onTogglePinnedVisible={toggleNearbyVisible}
           pinnedLoading={nearbyLoading}

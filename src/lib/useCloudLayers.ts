@@ -3,7 +3,7 @@ import { v4 as uuid } from 'uuid'
 import { collection, doc, deleteDoc, onSnapshot, orderBy, query, setDoc, updateDoc, type CollectionReference } from 'firebase/firestore'
 import type { Layer, Location } from '../types'
 import { db } from './firebase'
-import { clearShareParamFromUrl, readSharedLayerFromUrl } from './share'
+import { buildShareUrl, clearShareParamFromUrl, fetchSharedLayer, getShareIdFromUrl, readSharedLayerFromUrl } from './share'
 
 export function useCloudLayers(uid: string | null) {
   const [layers, setLayers] = useState<Layer[]>([])
@@ -24,6 +24,7 @@ export function useCloudLayers(uid: string | null) {
 
   useEffect(() => {
     if (!layersRef) return
+    const sourceShareId = getShareIdFromUrl() ?? undefined
     readSharedLayerFromUrl().then((shared) => {
       if (!shared || !layersRef) return
       clearShareParamFromUrl()
@@ -32,13 +33,15 @@ export function useCloudLayers(uid: string | null) {
       // flip the ownership of) the layer you already own.
       const importedId = uuid()
       const now = Date.now()
+      const { shareId: _shareId, ...sharedFields } = shared
       setDoc(doc(layersRef, importedId), {
-        ...shared,
+        ...sharedFields,
         id: importedId,
         visible: true,
         owned: false,
         pinned: false,
         archived: false,
+        ...(sourceShareId ? { sourceShareId } : {}),
         createdAt: now,
         updatedAt: now,
       }).then(() => setImportedLayerName(shared.name))
@@ -102,6 +105,40 @@ export function useCloudLayers(uid: string | null) {
     (layerId: string) => {
       const layer = layers.find((l) => l.id === layerId)
       if (layersRef && layer) updateDoc(doc(layersRef, layerId), { archived: !layer.archived, updatedAt: Date.now() })
+    },
+    [layersRef, layers],
+  )
+
+  // Publishes/re-publishes a share link. Re-sharing an already-shared layer
+  // reuses its shareId and updates the same published doc in place, which is
+  // what lets recipients later "refresh" to pull in the latest content.
+  const shareLayer = useCallback(
+    async (layerId: string) => {
+      const layer = layers.find((l) => l.id === layerId)
+      if (!layersRef || !layer || !uid) throw new Error('Sharing requires sign-in.')
+      const { url, shareId } = await buildShareUrl(layer, uid)
+      if (layer.shareId !== shareId) {
+        updateDoc(doc(layersRef, layerId), { shareId, updatedAt: Date.now() })
+      }
+      return url
+    },
+    [layersRef, layers, uid],
+  )
+
+  // Re-fetches the latest published content for an imported layer's source
+  // share and overwrites the local copy's name/locations with it.
+  const refreshLayer = useCallback(
+    async (layerId: string) => {
+      const layer = layers.find((l) => l.id === layerId)
+      if (!layersRef || !layer || !layer.sourceShareId) return false
+      const latest = await fetchSharedLayer(layer.sourceShareId)
+      if (!latest) return false
+      await updateDoc(doc(layersRef, layerId), {
+        name: latest.name,
+        locations: latest.locations,
+        updatedAt: Date.now(),
+      })
+      return true
     },
     [layersRef, layers],
   )
@@ -195,6 +232,8 @@ export function useCloudLayers(uid: string | null) {
     toggleLayerVisibility,
     toggleLayerPinned,
     toggleLayerArchived,
+    shareLayer,
+    refreshLayer,
     duplicateLayerLocations,
     addLocation,
     updateLocation,

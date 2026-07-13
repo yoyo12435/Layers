@@ -1,7 +1,21 @@
 import { Fragment, useRef, useState } from 'react'
 import type { Layer } from '../types'
-import { ArchiveIcon, EyeIcon, EyeOffIcon, ShareIcon, TrashIcon, XIcon, CheckIcon, PinIcon, PlusIcon, DuplicateIcon, SortIcon } from './icons'
-import { buildShareUrl } from '../lib/share'
+import {
+  ArchiveIcon,
+  CheckIcon,
+  DuplicateIcon,
+  EyeIcon,
+  EyeOffIcon,
+  MoreIcon,
+  PencilIcon,
+  PinIcon,
+  PlusIcon,
+  RefreshIcon,
+  ShareIcon,
+  SortIcon,
+  TrashIcon,
+  XIcon,
+} from './icons'
 import { sortLayers, type SortMode } from '../lib/sortLayers'
 
 const SORT_LABELS: Record<SortMode, string> = {
@@ -20,6 +34,8 @@ interface LayersPanelProps {
   onRenameLayer: (layerId: string, name: string) => void
   onCreateLayer: (name: string) => string
   onDuplicateLayer: (sourceLayerId: string, targetLayerId: string) => void
+  onShareLayer: (layerId: string) => Promise<string>
+  onRefreshLayer: (layerId: string) => Promise<boolean>
   pinnedLayer: Layer
   onTogglePinnedVisible: () => void
   pinnedLoading: boolean
@@ -36,13 +52,18 @@ export function LayersPanel({
   onRenameLayer,
   onCreateLayer,
   onDuplicateLayer,
+  onShareLayer,
+  onRefreshLayer,
   pinnedLayer,
   onTogglePinnedVisible,
   pinnedLoading,
   pinnedTooZoomedOut,
 }: LayersPanelProps) {
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [sharingId, setSharingId] = useState<string | null>(null)
+  const [refreshingId, setRefreshingId] = useState<string | null>(null)
+  const [refreshedId, setRefreshedId] = useState<string | null>(null)
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
   const [creatingLayer, setCreatingLayer] = useState(false)
@@ -94,18 +115,46 @@ export function LayersPanel({
   const handleShare = async (layer: Layer) => {
     setSharingId(layer.id)
     try {
-      const url = await buildShareUrl(layer)
+      const url = await onShareLayer(layer.id)
       try {
         await navigator.clipboard.writeText(url)
       } catch {
         window.prompt('Copy this share link:', url)
       }
       setCopiedId(layer.id)
-      setTimeout(() => setCopiedId((id) => (id === layer.id ? null : id)), 1800)
+      setTimeout(() => {
+        setCopiedId((id) => (id === layer.id ? null : id))
+        setMenuOpenId((id) => (id === layer.id ? null : id))
+      }, 1200)
     } catch {
       window.alert("Couldn't create a share link. Please try again.")
+      setMenuOpenId(null)
     } finally {
       setSharingId(null)
+    }
+  }
+
+  const handleRefresh = async (layer: Layer) => {
+    if (!layer.sourceShareId) {
+      window.alert("This layer can't be refreshed — it wasn't imported from a share link.")
+      setMenuOpenId(null)
+      return
+    }
+    setRefreshingId(layer.id)
+    try {
+      const ok = await onRefreshLayer(layer.id)
+      if (ok) {
+        setRefreshedId(layer.id)
+        setTimeout(() => {
+          setRefreshedId((id) => (id === layer.id ? null : id))
+          setMenuOpenId((id) => (id === layer.id ? null : id))
+        }, 1200)
+      } else {
+        window.alert("Couldn't refresh this layer. The original share link may no longer exist.")
+        setMenuOpenId(null)
+      }
+    } finally {
+      setRefreshingId(null)
     }
   }
 
@@ -311,80 +360,127 @@ export function LayersPanel({
                     </span>
                   </div>
 
-                  <button
-                    onClick={() => handleShare(layer)}
-                    disabled={sharingId === layer.id}
-                    className="p-1.5 rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 shrink-0 disabled:opacity-50"
-                    aria-label={`Share ${layer.name}`}
-                    title="Copy share link"
-                  >
-                    {copiedId === layer.id ? (
-                      <CheckIcon className="w-4 h-4 text-green-600" />
-                    ) : (
-                      <ShareIcon className={`w-4 h-4 ${sharingId === layer.id ? 'animate-pulse' : ''}`} />
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() => onToggleArchived(layer.id)}
-                    className="p-1.5 rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 shrink-0"
-                    aria-label={layer.archived ? `Unarchive ${layer.name}` : `Archive ${layer.name}`}
-                    title={layer.archived ? 'Unarchive' : 'Archive'}
-                  >
-                    <ArchiveIcon className="w-4 h-4" />
-                  </button>
-
-                  {!layer.owned && (
+                  <div className="relative shrink-0">
                     <button
-                      onClick={() => setDuplicatingId((id) => (id === layer.id ? null : layer.id))}
-                      className={`p-1.5 rounded-full shrink-0 transition-colors ${duplicatingId === layer.id ? 'bg-neutral-100 text-neutral-800' : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800'}`}
-                      aria-label={`Insert all locations from ${layer.name} into one of your layers`}
-                      title="Insert all locations into an existing layer"
+                      onClick={() => setMenuOpenId((id) => (id === layer.id ? null : layer.id))}
+                      className={`p-1.5 rounded-full transition-colors ${menuOpenId === layer.id ? 'bg-neutral-100 text-neutral-800' : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800'}`}
+                      aria-label={`More options for ${layer.name}`}
+                      title="More options"
                     >
-                      <DuplicateIcon className="w-4 h-4" />
+                      <MoreIcon className="w-5 h-5" />
                     </button>
-                  )}
 
-                  <button
-                    onClick={() => {
-                      if (window.confirm(`Delete layer "${layer.name}"? This can't be undone.`)) onDeleteLayer(layer.id)
-                    }}
-                    className="p-1.5 rounded-full text-neutral-500 hover:bg-red-50 hover:text-red-600 shrink-0"
-                    aria-label={`Delete ${layer.name}`}
-                    title="Delete layer"
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                  </button>
+                    {menuOpenId === layer.id && (
+                      <>
+                        <div className="fixed inset-0 z-[900]" onClick={() => setMenuOpenId(null)} />
+                        <div className="absolute right-0 mt-1.5 w-44 bg-white shadow-xl border border-neutral-200 rounded-xl overflow-hidden z-[901]">
+                          <button
+                            onClick={() => handleShare(layer)}
+                            disabled={sharingId === layer.id}
+                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-left text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+                          >
+                            {copiedId === layer.id ? (
+                              <CheckIcon className="w-4 h-4 text-green-600" />
+                            ) : (
+                              <ShareIcon className={`w-4 h-4 ${sharingId === layer.id ? 'animate-pulse' : ''}`} />
+                            )}
+                            {copiedId === layer.id ? 'Copied!' : 'Share'}
+                          </button>
+
+                          {!layer.owned && (
+                            <button
+                              onClick={() => handleRefresh(layer)}
+                              disabled={refreshingId === layer.id}
+                              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-left text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+                            >
+                              {refreshedId === layer.id ? (
+                                <CheckIcon className="w-4 h-4 text-green-600" />
+                              ) : (
+                                <RefreshIcon className={`w-4 h-4 ${refreshingId === layer.id ? 'animate-spin' : ''}`} />
+                              )}
+                              {refreshedId === layer.id ? 'Refreshed!' : 'Refresh'}
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => {
+                              setMenuOpenId(null)
+                              startRename(layer)
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-left text-neutral-700 hover:bg-neutral-50"
+                          >
+                            <PencilIcon className="w-4 h-4" />
+                            Rename
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setMenuOpenId(null)
+                              setDuplicatingId((id) => (id === layer.id ? null : layer.id))
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-left text-neutral-700 hover:bg-neutral-50"
+                          >
+                            <DuplicateIcon className="w-4 h-4" />
+                            Copy
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setMenuOpenId(null)
+                              onToggleArchived(layer.id)
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-left text-neutral-700 hover:bg-neutral-50"
+                          >
+                            <ArchiveIcon className="w-4 h-4" />
+                            {layer.archived ? 'Unarchive' : 'Archive'}
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setMenuOpenId(null)
+                              if (window.confirm(`Delete layer "${layer.name}"? This can't be undone.`)) onDeleteLayer(layer.id)
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-left text-red-600 hover:bg-red-50"
+                          >
+                            <TrashIcon className="w-4 h-4" />
+                            Delete
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </li>
 
                 {duplicatingId === layer.id && (
                   <li className="px-5 py-3 bg-neutral-50">
                     <p className="text-xs font-medium text-neutral-500 mb-1.5">Insert all locations into…</p>
-                    {ownedTargets.length === 0 ? (
-                      <p className="text-xs text-neutral-400">You don't have any layers yet. Create one first.</p>
+                    {ownedTargets.filter((t) => t.id !== layer.id).length === 0 ? (
+                      <p className="text-xs text-neutral-400">You don't have any other layers yet. Create one first.</p>
                     ) : (
                       <div className="flex flex-wrap gap-1.5">
-                        {ownedTargets.map((target) => {
-                          const done = duplicatedInto[layer.id] === target.id
-                          return (
-                            <button
-                              key={target.id}
-                              type="button"
-                              onClick={() => {
-                                if (done) return
-                                onDuplicateLayer(layer.id, target.id)
-                                setDuplicatedInto((prev) => ({ ...prev, [layer.id]: target.id }))
-                              }}
-                              disabled={done}
-                              className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-full border transition-colors ${
-                                done ? 'bg-green-50 border-green-300 text-green-700' : 'bg-white border-neutral-300 text-neutral-600'
-                              }`}
-                            >
-                              {done ? <CheckIcon className="w-3 h-3" /> : <PlusIcon className="w-3 h-3" />}
-                              {target.name}
-                            </button>
-                          )
-                        })}
+                        {ownedTargets
+                          .filter((t) => t.id !== layer.id)
+                          .map((target) => {
+                            const done = duplicatedInto[layer.id] === target.id
+                            return (
+                              <button
+                                key={target.id}
+                                type="button"
+                                onClick={() => {
+                                  if (done) return
+                                  onDuplicateLayer(layer.id, target.id)
+                                  setDuplicatedInto((prev) => ({ ...prev, [layer.id]: target.id }))
+                                }}
+                                disabled={done}
+                                className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-full border transition-colors ${
+                                  done ? 'bg-green-50 border-green-300 text-green-700' : 'bg-white border-neutral-300 text-neutral-600'
+                                }`}
+                              >
+                                {done ? <CheckIcon className="w-3 h-3" /> : <PlusIcon className="w-3 h-3" />}
+                                {target.name}
+                              </button>
+                            )
+                          })}
                       </div>
                     )}
                   </li>

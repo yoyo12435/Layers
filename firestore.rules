@@ -6,12 +6,16 @@ service cloud.firestore {
     }
 
     // Short-link share snapshots: readable by anyone with the link (including
-    // signed-out visitors), only creatable by signed-in users, and immutable
-    // once published.
+    // signed-out visitors). Only the owner who published a snapshot can
+    // create or update it (re-sharing reuses the same doc so recipients can
+    // refresh to the latest content); deletes are disallowed.
     match /sharedLayers/{shareId} {
       allow read: if true;
-      allow create: if request.auth != null;
-      allow update, delete: if false;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.ownerId;
+      allow update: if request.auth != null
+        && request.auth.uid == resource.data.ownerId
+        && request.auth.uid == request.resource.data.ownerId;
+      allow delete: if false;
     }
   }
 }

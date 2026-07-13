@@ -20,6 +20,8 @@ export interface Layer {
   archived?: boolean
   createdAt?: number
   updatedAt?: number
+  shareId?: string
+  sourceShareId?: string
 }
 
 export const CATEGORY_COLORS: Record<Category, string> = {

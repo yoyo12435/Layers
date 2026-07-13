@@ -189,6 +189,26 @@ export function DuplicateIcon({ className }: IconProps) {
   )
 }
 
+export function MoreIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <circle cx="5" cy="12" r="2" />
+      <circle cx="12" cy="12" r="2" />
+      <circle cx="19" cy="12" r="2" />
+    </svg>
+  )
+}
+
+export function RefreshIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M21 12a9 9 0 0 1-15.4 6.4M3 12a9 9 0 0 1 15.4-6.4" />
+      <polyline points="21 3 21 9 15 9" />
+      <polyline points="3 21 3 15 9 15" />
+    </svg>
+  )
+}
+
 export function GoogleIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className}>
