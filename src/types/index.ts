@@ -17,6 +17,7 @@ export interface Layer {
   visible: boolean
   owned: boolean
   pinned?: boolean
+  archived?: boolean
 }
 
 export const CATEGORY_COLORS: Record<Category, string> = {

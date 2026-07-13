@@ -36,6 +36,8 @@ export function useCloudLayers(uid: string | null) {
         id: importedId,
         visible: true,
         owned: false,
+        pinned: false,
+        archived: false,
         createdAt: Date.now(),
       }).then(() => setImportedLayerName(shared.name))
     })
@@ -86,6 +88,14 @@ export function useCloudLayers(uid: string | null) {
     (layerId: string) => {
       const layer = layers.find((l) => l.id === layerId)
       if (layersRef && layer) updateDoc(doc(layersRef, layerId), { pinned: !layer.pinned })
+    },
+    [layersRef, layers],
+  )
+
+  const toggleLayerArchived = useCallback(
+    (layerId: string) => {
+      const layer = layers.find((l) => l.id === layerId)
+      if (layersRef && layer) updateDoc(doc(layersRef, layerId), { archived: !layer.archived })
     },
     [layersRef, layers],
   )
@@ -176,6 +186,7 @@ export function useCloudLayers(uid: string | null) {
     renameLayer,
     toggleLayerVisibility,
     toggleLayerPinned,
+    toggleLayerArchived,
     duplicateLayerLocations,
     addLocation,
     updateLocation,

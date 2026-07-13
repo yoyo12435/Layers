@@ -39,6 +39,7 @@ function MapApp({ user, onSignOut }: MapAppProps) {
     renameLayer,
     toggleLayerVisibility,
     toggleLayerPinned,
+    toggleLayerArchived,
     duplicateLayerLocations,
     addLocation,
     deleteLocation,
@@ -286,6 +287,7 @@ function MapApp({ user, onSignOut }: MapAppProps) {
           onClose={() => setPanelOpen(false)}
           onToggleVisibility={toggleLayerVisibility}
           onTogglePinned={toggleLayerPinned}
+          onToggleArchived={toggleLayerArchived}
           onDeleteLayer={deleteLayer}
           onRenameLayer={renameLayer}
           onCreateLayer={handleCreateLayer}

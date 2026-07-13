@@ -1,6 +1,6 @@
 import { Fragment, useRef, useState } from 'react'
 import type { Layer } from '../types'
-import { EyeIcon, EyeOffIcon, ShareIcon, TrashIcon, XIcon, CheckIcon, PinIcon, PlusIcon, DuplicateIcon } from './icons'
+import { ArchiveIcon, EyeIcon, EyeOffIcon, ShareIcon, TrashIcon, XIcon, CheckIcon, PinIcon, PlusIcon, DuplicateIcon } from './icons'
 import { buildShareUrl } from '../lib/share'
 import { sortLayers } from '../lib/sortLayers'
 
@@ -9,6 +9,7 @@ interface LayersPanelProps {
   onClose: () => void
   onToggleVisibility: (layerId: string) => void
   onTogglePinned: (layerId: string) => void
+  onToggleArchived: (layerId: string) => void
   onDeleteLayer: (layerId: string) => void
   onRenameLayer: (layerId: string, name: string) => void
   onCreateLayer: (name: string) => string
@@ -24,6 +25,7 @@ export function LayersPanel({
   onClose,
   onToggleVisibility,
   onTogglePinned,
+  onToggleArchived,
   onDeleteLayer,
   onRenameLayer,
   onCreateLayer,
@@ -42,10 +44,12 @@ export function LayersPanel({
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null)
   const [duplicatedInto, setDuplicatedInto] = useState<Record<string, string>>({})
   const [allHidden, setAllHidden] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
   const hiddenSnapshotRef = useRef<Record<string, boolean> | null>(null)
 
-  const sortedLayers = sortLayers(layers)
-  const ownedTargets = layers.filter((l) => l.owned)
+  const visibleList = layers.filter((l) => (showArchived ? l.archived : !l.archived))
+  const sortedLayers = sortLayers(visibleList)
+  const ownedTargets = layers.filter((l) => l.owned && !l.archived)
 
   const handleToggleAllVisibility = () => {
     if (!allHidden) {
@@ -111,8 +115,27 @@ export function LayersPanel({
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
       <div className="absolute right-0 top-0 h-full w-full max-w-sm bg-white shadow-2xl flex flex-col layers-panel-in">
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-200">
-          <h2 className="text-lg font-semibold text-neutral-900">Your Layers</h2>
+          <h2 className="text-lg font-semibold text-neutral-900">Layers management</h2>
           <div className="flex items-center gap-1">
+            <button
+              onClick={() => {
+                setShowArchived(false)
+                setCreatingLayer(true)
+              }}
+              className="p-1.5 rounded-full border border-neutral-300 hover:bg-neutral-100 text-neutral-600"
+              aria-label="Create a new layer"
+              title="New layer"
+            >
+              <PlusIcon className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setShowArchived((v) => !v)}
+              className={`p-1.5 rounded-full transition-colors ${showArchived ? 'bg-neutral-900 text-white' : 'hover:bg-neutral-100 text-neutral-500'}`}
+              aria-label={showArchived ? 'Back to your layers' : 'Show archived layers'}
+              title={showArchived ? 'Back to your layers' : 'Show archived layers'}
+            >
+              <ArchiveIcon className="w-5 h-5" />
+            </button>
             <button
               onClick={handleToggleAllVisibility}
               className="p-1.5 rounded-full hover:bg-neutral-100 text-neutral-500"
@@ -127,8 +150,8 @@ export function LayersPanel({
           </div>
         </div>
 
-        <div className="px-5 py-3 border-b border-neutral-200">
-          {creatingLayer ? (
+        {creatingLayer && (
+          <div className="px-5 py-3 border-b border-neutral-200">
             <div className="flex items-center gap-1.5">
               <input
                 autoFocus
@@ -148,49 +171,43 @@ export function LayersPanel({
                 <XIcon className="w-4 h-4" />
               </button>
             </div>
-          ) : (
-            <button
-              onClick={() => setCreatingLayer(true)}
-              className="w-full flex items-center justify-center gap-1.5 text-sm font-medium border border-dashed border-neutral-300 text-neutral-500 hover:text-neutral-800 hover:border-neutral-400 rounded-xl px-4 py-2.5"
-            >
-              <PlusIcon className="w-4 h-4" />
-              New layer
-            </button>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto">
           <ul className="divide-y divide-neutral-100">
-            <li className="px-5 py-3 flex items-center gap-3 bg-neutral-50">
-              <button
-                onClick={onTogglePinnedVisible}
-                className={`p-1.5 rounded-full shrink-0 transition-colors ${pinnedLayer.visible ? 'text-neutral-700 hover:bg-neutral-100' : 'text-neutral-300 hover:bg-neutral-100'}`}
-                aria-label={pinnedLayer.visible ? `Hide ${pinnedLayer.name}` : `Show ${pinnedLayer.name}`}
-                title={pinnedLayer.visible ? 'Visible — tap to hide' : 'Hidden — tap to show'}
-              >
-                {pinnedLayer.visible ? <EyeIcon className="w-5 h-5" /> : <EyeOffIcon className="w-5 h-5" />}
-              </button>
+            {!showArchived && (
+              <li className="px-5 py-3 flex items-center gap-3 bg-neutral-50">
+                <button
+                  onClick={onTogglePinnedVisible}
+                  className={`p-1.5 rounded-full shrink-0 transition-colors ${pinnedLayer.visible ? 'text-neutral-700 hover:bg-neutral-100' : 'text-neutral-300 hover:bg-neutral-100'}`}
+                  aria-label={pinnedLayer.visible ? `Hide ${pinnedLayer.name}` : `Show ${pinnedLayer.name}`}
+                  title={pinnedLayer.visible ? 'Visible — tap to hide' : 'Hidden — tap to show'}
+                >
+                  {pinnedLayer.visible ? <EyeIcon className="w-5 h-5" /> : <EyeOffIcon className="w-5 h-5" />}
+                </button>
 
-              <div className="flex-1 min-w-0">
-                <span className="flex items-center gap-1.5 min-w-0">
-                  <PinIcon className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                  <span className={`text-sm font-medium truncate ${pinnedLayer.visible ? 'text-neutral-900' : 'text-neutral-400'}`}>
-                    {pinnedLayer.name}
+                <div className="flex-1 min-w-0">
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    <PinIcon className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                    <span className={`text-sm font-medium truncate ${pinnedLayer.visible ? 'text-neutral-900' : 'text-neutral-400'}`}>
+                      {pinnedLayer.name}
+                    </span>
                   </span>
-                </span>
-                <span className="text-xs text-neutral-400">
-                  {pinnedTooZoomedOut
-                    ? 'Zoom in on the map to load nearby places'
-                    : pinnedLoading
-                      ? 'Loading nearby places…'
-                      : `${pinnedLayer.locations.length} found nearby`}
-                </span>
-              </div>
-            </li>
+                  <span className="text-xs text-neutral-400">
+                    {pinnedTooZoomedOut
+                      ? 'Zoom in on the map to load nearby places'
+                      : pinnedLoading
+                        ? 'Loading nearby places…'
+                        : `${pinnedLayer.locations.length} found nearby`}
+                  </span>
+                </div>
+              </li>
+            )}
 
-            {layers.length === 0 && (
+            {sortedLayers.length === 0 && (
               <p className="px-5 py-8 text-center text-neutral-400 text-sm">
-                No layers yet. Create one to get started, or open a share link.
+                {showArchived ? 'No archived layers.' : 'No layers yet. Create one to get started, or open a share link.'}
               </p>
             )}
 
@@ -260,6 +277,15 @@ export function LayersPanel({
                     ) : (
                       <ShareIcon className={`w-4 h-4 ${sharingId === layer.id ? 'animate-pulse' : ''}`} />
                     )}
+                  </button>
+
+                  <button
+                    onClick={() => onToggleArchived(layer.id)}
+                    className="p-1.5 rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 shrink-0"
+                    aria-label={layer.archived ? `Unarchive ${layer.name}` : `Archive ${layer.name}`}
+                    title={layer.archived ? 'Unarchive' : 'Archive'}
+                  >
+                    <ArchiveIcon className="w-4 h-4" />
                   </button>
 
                   {!layer.owned && (
