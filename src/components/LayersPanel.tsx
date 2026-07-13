@@ -1,8 +1,14 @@
 import { Fragment, useRef, useState } from 'react'
 import type { Layer } from '../types'
-import { ArchiveIcon, EyeIcon, EyeOffIcon, ShareIcon, TrashIcon, XIcon, CheckIcon, PinIcon, PlusIcon, DuplicateIcon } from './icons'
+import { ArchiveIcon, EyeIcon, EyeOffIcon, ShareIcon, TrashIcon, XIcon, CheckIcon, PinIcon, PlusIcon, DuplicateIcon, SortIcon } from './icons'
 import { buildShareUrl } from '../lib/share'
-import { sortLayers } from '../lib/sortLayers'
+import { sortLayers, type SortMode } from '../lib/sortLayers'
+
+const SORT_LABELS: Record<SortMode, string> = {
+  alpha: 'A–Z',
+  'recent-changed': 'Recently changed',
+  'recent-added': 'Recently added',
+}
 
 interface LayersPanelProps {
   layers: Layer[]
@@ -45,10 +51,12 @@ export function LayersPanel({
   const [duplicatedInto, setDuplicatedInto] = useState<Record<string, string>>({})
   const [allHidden, setAllHidden] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
+  const [sortMode, setSortMode] = useState<SortMode>('alpha')
+  const [sortMenuOpen, setSortMenuOpen] = useState(false)
   const hiddenSnapshotRef = useRef<Record<string, boolean> | null>(null)
 
   const visibleList = layers.filter((l) => (showArchived ? l.archived : !l.archived))
-  const sortedLayers = sortLayers(visibleList)
+  const sortedLayers = sortLayers(visibleList, sortMode)
   const ownedTargets = layers.filter((l) => l.owned && !l.archived)
 
   const handleToggleAllVisibility = () => {
@@ -56,6 +64,7 @@ export function LayersPanel({
       const snapshot: Record<string, boolean> = { [pinnedLayer.id]: pinnedLayer.visible }
       if (pinnedLayer.visible) onTogglePinnedVisible()
       for (const layer of layers) {
+        if (layer.archived) continue
         snapshot[layer.id] = layer.visible
         if (layer.visible) onToggleVisibility(layer.id)
       }
@@ -66,6 +75,7 @@ export function LayersPanel({
       if (snapshot) {
         if (snapshot[pinnedLayer.id] && !pinnedLayer.visible) onTogglePinnedVisible()
         for (const layer of layers) {
+          if (layer.archived) continue
           if (snapshot[layer.id] && !layer.visible) onToggleVisibility(layer.id)
         }
       }
@@ -115,8 +125,50 @@ export function LayersPanel({
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
       <div className="absolute right-0 top-0 h-full w-full max-w-sm bg-white shadow-2xl flex flex-col layers-panel-in">
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-200">
-          <h2 className="text-lg font-semibold text-neutral-900">Layers management</h2>
+          <h2 className="text-lg font-semibold text-neutral-900">{showArchived ? 'Archived Layers' : 'Your Layers'}</h2>
           <div className="flex items-center gap-1">
+            <button
+              onClick={handleToggleAllVisibility}
+              className="p-1.5 rounded-full hover:bg-neutral-100 text-neutral-500"
+              aria-label={allHidden ? 'Show all layers' : 'Hide all layers'}
+              title={allHidden ? 'Show all layers' : 'Hide all layers'}
+            >
+              {allHidden ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+            </button>
+
+            <div className="relative">
+              <button
+                onClick={() => setSortMenuOpen((v) => !v)}
+                className={`p-1.5 rounded-full transition-colors ${sortMenuOpen ? 'bg-neutral-100 text-neutral-800' : 'hover:bg-neutral-100 text-neutral-500'}`}
+                aria-label="Sort layers"
+                title={`Sort: ${SORT_LABELS[sortMode]}`}
+              >
+                <SortIcon className="w-5 h-5" />
+              </button>
+              {sortMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-[900]" onClick={() => setSortMenuOpen(false)} />
+                  <div className="absolute right-0 mt-1.5 w-48 bg-white shadow-xl border border-neutral-200 rounded-xl overflow-hidden z-[901]">
+                    {(Object.keys(SORT_LABELS) as SortMode[]).map((mode) => (
+                      <button
+                        key={mode}
+                        onClick={() => {
+                          setSortMode(mode)
+                          setSortMenuOpen(false)
+                        }}
+                        className="w-full flex items-center justify-between px-3.5 py-2.5 text-sm text-left hover:bg-neutral-50"
+                      >
+                        <span className={sortMode === mode ? 'font-semibold text-neutral-900' : 'text-neutral-600'}>
+                          {SORT_LABELS[mode]}
+                        </span>
+                        {sortMode === mode && <CheckIcon className="w-4 h-4 text-neutral-900" />}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
             <button
               onClick={() => {
                 setShowArchived(false)
@@ -128,6 +180,7 @@ export function LayersPanel({
             >
               <PlusIcon className="w-4 h-4" />
             </button>
+
             <button
               onClick={() => setShowArchived((v) => !v)}
               className={`p-1.5 rounded-full transition-colors ${showArchived ? 'bg-neutral-900 text-white' : 'hover:bg-neutral-100 text-neutral-500'}`}
@@ -136,14 +189,7 @@ export function LayersPanel({
             >
               <ArchiveIcon className="w-5 h-5" />
             </button>
-            <button
-              onClick={handleToggleAllVisibility}
-              className="p-1.5 rounded-full hover:bg-neutral-100 text-neutral-500"
-              aria-label={allHidden ? 'Show all layers' : 'Hide all layers'}
-              title={allHidden ? 'Show all layers' : 'Hide all layers'}
-            >
-              {allHidden ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
-            </button>
+
             <button onClick={onClose} className="p-1.5 rounded-full hover:bg-neutral-100 text-neutral-500" aria-label="Close">
               <XIcon className="w-5 h-5" />
             </button>

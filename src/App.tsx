@@ -62,8 +62,10 @@ function MapApp({ user, onSignOut }: MapAppProps) {
 
   const { nearbyLayer, toggleNearbyVisible, loading: nearbyLoading, tooZoomedOut: nearbyTooZoomedOut } = useNearbyLayer(bounds)
 
-  const visibleLayers = layers.filter((l) => l.visible)
-  const ownedLayers = layers.filter((l) => l.owned)
+  // Archived layers are hidden everywhere outside the Layers manager's
+  // archive view, regardless of their own visible flag.
+  const visibleLayers = layers.filter((l) => l.visible && !l.archived)
+  const ownedLayers = layers.filter((l) => l.owned && !l.archived)
   const ownedVisibleLayers = visibleLayers.filter((l) => l.owned)
 
   useEffect(() => {

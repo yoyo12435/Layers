@@ -18,6 +18,8 @@ export interface Layer {
   owned: boolean
   pinned?: boolean
   archived?: boolean
+  createdAt?: number
+  updatedAt?: number
 }
 
 export const CATEGORY_COLORS: Record<Category, string> = {

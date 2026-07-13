@@ -31,6 +31,7 @@ export function useCloudLayers(uid: string | null) {
       // share link — reusing the original layer's id would overwrite (and
       // flip the ownership of) the layer you already own.
       const importedId = uuid()
+      const now = Date.now()
       setDoc(doc(layersRef, importedId), {
         ...shared,
         id: importedId,
@@ -38,7 +39,8 @@ export function useCloudLayers(uid: string | null) {
         owned: false,
         pinned: false,
         archived: false,
-        createdAt: Date.now(),
+        createdAt: now,
+        updatedAt: now,
       }).then(() => setImportedLayerName(shared.name))
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -48,13 +50,17 @@ export function useCloudLayers(uid: string | null) {
     (name: string) => {
       const id = uuid()
       if (layersRef) {
+        const now = Date.now()
         setDoc(doc(layersRef, id), {
           id,
           name,
           locations: [],
           visible: true,
           owned: true,
-          createdAt: Date.now(),
+          pinned: false,
+          archived: false,
+          createdAt: now,
+          updatedAt: now,
         })
       }
       return id
@@ -71,7 +77,7 @@ export function useCloudLayers(uid: string | null) {
 
   const renameLayer = useCallback(
     (layerId: string, name: string) => {
-      if (layersRef) updateDoc(doc(layersRef, layerId), { name })
+      if (layersRef) updateDoc(doc(layersRef, layerId), { name, updatedAt: Date.now() })
     },
     [layersRef],
   )
@@ -79,7 +85,7 @@ export function useCloudLayers(uid: string | null) {
   const toggleLayerVisibility = useCallback(
     (layerId: string) => {
       const layer = layers.find((l) => l.id === layerId)
-      if (layersRef && layer) updateDoc(doc(layersRef, layerId), { visible: !layer.visible })
+      if (layersRef && layer) updateDoc(doc(layersRef, layerId), { visible: !layer.visible, updatedAt: Date.now() })
     },
     [layersRef, layers],
   )
@@ -87,7 +93,7 @@ export function useCloudLayers(uid: string | null) {
   const toggleLayerPinned = useCallback(
     (layerId: string) => {
       const layer = layers.find((l) => l.id === layerId)
-      if (layersRef && layer) updateDoc(doc(layersRef, layerId), { pinned: !layer.pinned })
+      if (layersRef && layer) updateDoc(doc(layersRef, layerId), { pinned: !layer.pinned, updatedAt: Date.now() })
     },
     [layersRef, layers],
   )
@@ -95,7 +101,7 @@ export function useCloudLayers(uid: string | null) {
   const toggleLayerArchived = useCallback(
     (layerId: string) => {
       const layer = layers.find((l) => l.id === layerId)
-      if (layersRef && layer) updateDoc(doc(layersRef, layerId), { archived: !layer.archived })
+      if (layersRef && layer) updateDoc(doc(layersRef, layerId), { archived: !layer.archived, updatedAt: Date.now() })
     },
     [layersRef, layers],
   )
@@ -109,7 +115,7 @@ export function useCloudLayers(uid: string | null) {
       const target = layers.find((l) => l.id === targetLayerId)
       if (!layersRef || !source || !target) return
       const copies: Location[] = source.locations.map((loc) => ({ ...loc, id: uuid() }))
-      updateDoc(doc(layersRef, targetLayerId), { locations: [...target.locations, ...copies] })
+      updateDoc(doc(layersRef, targetLayerId), { locations: [...target.locations, ...copies], updatedAt: Date.now() })
     },
     [layersRef, layers],
   )
@@ -119,7 +125,7 @@ export function useCloudLayers(uid: string | null) {
       const layer = layers.find((l) => l.id === layerId)
       if (!layersRef || !layer) return
       const newLocation: Location = { ...location, id: uuid() }
-      updateDoc(doc(layersRef, layerId), { locations: [...layer.locations, newLocation] })
+      updateDoc(doc(layersRef, layerId), { locations: [...layer.locations, newLocation], updatedAt: Date.now() })
     },
     [layersRef, layers],
   )
@@ -129,7 +135,7 @@ export function useCloudLayers(uid: string | null) {
       const layer = layers.find((l) => l.id === layerId)
       if (!layersRef || !layer) return
       const newLocations = layer.locations.map((loc) => (loc.id === locationId ? { ...loc, ...updates } : loc))
-      updateDoc(doc(layersRef, layerId), { locations: newLocations })
+      updateDoc(doc(layersRef, layerId), { locations: newLocations, updatedAt: Date.now() })
     },
     [layersRef, layers],
   )
@@ -138,7 +144,7 @@ export function useCloudLayers(uid: string | null) {
     (layerId: string, locationId: string) => {
       const layer = layers.find((l) => l.id === layerId)
       if (!layersRef || !layer) return
-      updateDoc(doc(layersRef, layerId), { locations: layer.locations.filter((loc) => loc.id !== locationId) })
+      updateDoc(doc(layersRef, layerId), { locations: layer.locations.filter((loc) => loc.id !== locationId), updatedAt: Date.now() })
     },
     [layersRef, layers],
   )
@@ -149,6 +155,7 @@ export function useCloudLayers(uid: string | null) {
   const setLocationLayers = useCallback(
     (locationId: string, fields: Omit<Location, 'id'>, layerIds: string[]) => {
       if (!layersRef) return
+      const now = Date.now()
       for (const layer of layers) {
         if (!layer.owned) continue
         const hasEntry = layer.locations.some((loc) => loc.id === locationId)
@@ -157,9 +164,9 @@ export function useCloudLayers(uid: string | null) {
           const newLocations = hasEntry
             ? layer.locations.map((loc) => (loc.id === locationId ? { ...loc, ...fields } : loc))
             : [...layer.locations, { id: locationId, ...fields }]
-          updateDoc(doc(layersRef, layer.id), { locations: newLocations })
+          updateDoc(doc(layersRef, layer.id), { locations: newLocations, updatedAt: now })
         } else if (hasEntry) {
-          updateDoc(doc(layersRef, layer.id), { locations: layer.locations.filter((loc) => loc.id !== locationId) })
+          updateDoc(doc(layersRef, layer.id), { locations: layer.locations.filter((loc) => loc.id !== locationId), updatedAt: now })
         }
       }
     },
@@ -169,9 +176,10 @@ export function useCloudLayers(uid: string | null) {
   const deleteLocationEverywhere = useCallback(
     (locationId: string) => {
       if (!layersRef) return
+      const now = Date.now()
       for (const layer of layers) {
         if (!layer.locations.some((loc) => loc.id === locationId)) continue
-        updateDoc(doc(layersRef, layer.id), { locations: layer.locations.filter((loc) => loc.id !== locationId) })
+        updateDoc(doc(layersRef, layer.id), { locations: layer.locations.filter((loc) => loc.id !== locationId), updatedAt: now })
       }
     },
     [layersRef, layers],

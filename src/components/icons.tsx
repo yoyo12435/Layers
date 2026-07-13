@@ -171,6 +171,15 @@ export function ArchiveIcon({ className }: IconProps) {
   )
 }
 
+export function SortIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M3 7h7M3 12h5M3 17h3" />
+      <path d="M17 4v16M17 4l-4 4M17 4l4 4" />
+    </svg>
+  )
+}
+
 export function DuplicateIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
