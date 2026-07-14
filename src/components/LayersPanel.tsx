@@ -1,4 +1,5 @@
-import { Fragment, useRef, useState } from 'react'
+import { Fragment, useRef, useState, type MouseEvent } from 'react'
+import { createPortal } from 'react-dom'
 import type { Layer } from '../types'
 import {
   ArchiveIcon,
@@ -59,7 +60,7 @@ export function LayersPanel({
   pinnedLoading,
   pinnedTooZoomedOut,
 }: LayersPanelProps) {
-  const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
+  const [openMenu, setOpenMenu] = useState<{ layerId: string; top?: number; bottom?: number; right: number } | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [sharingId, setSharingId] = useState<string | null>(null)
   const [refreshingId, setRefreshingId] = useState<string | null>(null)
@@ -124,11 +125,11 @@ export function LayersPanel({
       setCopiedId(layer.id)
       setTimeout(() => {
         setCopiedId((id) => (id === layer.id ? null : id))
-        setMenuOpenId((id) => (id === layer.id ? null : id))
+        setOpenMenu((m) => (m?.layerId === layer.id ? null : m))
       }, 1200)
     } catch {
       window.alert("Couldn't create a share link. Please try again.")
-      setMenuOpenId(null)
+      setOpenMenu(null)
     } finally {
       setSharingId(null)
     }
@@ -137,7 +138,7 @@ export function LayersPanel({
   const handleRefresh = async (layer: Layer) => {
     if (!layer.sourceShareId) {
       window.alert("This layer can't be refreshed — it wasn't imported from a share link.")
-      setMenuOpenId(null)
+      setOpenMenu(null)
       return
     }
     setRefreshingId(layer.id)
@@ -147,15 +148,31 @@ export function LayersPanel({
         setRefreshedId(layer.id)
         setTimeout(() => {
           setRefreshedId((id) => (id === layer.id ? null : id))
-          setMenuOpenId((id) => (id === layer.id ? null : id))
+          setOpenMenu((m) => (m?.layerId === layer.id ? null : m))
         }, 1200)
       } else {
         window.alert("Couldn't refresh this layer. The original share link may no longer exist.")
-        setMenuOpenId(null)
+        setOpenMenu(null)
       }
     } finally {
       setRefreshingId(null)
     }
+  }
+
+  const toggleRowMenu = (layer: Layer, e: MouseEvent<HTMLButtonElement>) => {
+    if (openMenu?.layerId === layer.id) {
+      setOpenMenu(null)
+      return
+    }
+    const rect = e.currentTarget.getBoundingClientRect()
+    const estimatedMenuHeight = 320
+    const spaceBelow = window.innerHeight - rect.bottom
+    const openUpward = spaceBelow < estimatedMenuHeight && rect.top > spaceBelow
+    setOpenMenu({
+      layerId: layer.id,
+      right: window.innerWidth - rect.right,
+      ...(openUpward ? { bottom: window.innerHeight - rect.top + 6 } : { top: rect.bottom + 6 }),
+    })
   }
 
   const startRename = (layer: Layer) => {
@@ -269,7 +286,7 @@ export function LayersPanel({
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto" onScroll={() => setOpenMenu(null)}>
           <ul className="divide-y divide-neutral-100">
             {!showArchived && (
               <li className="px-5 py-3 flex items-center gap-3 bg-neutral-50">
@@ -309,14 +326,16 @@ export function LayersPanel({
             {sortedLayers.map((layer) => (
               <Fragment key={layer.id}>
                 <li className="px-5 py-3 flex items-center gap-3">
-                  <button
-                    onClick={() => onToggleVisibility(layer.id)}
-                    className={`p-1.5 rounded-full shrink-0 transition-colors ${layer.visible ? 'text-neutral-700 hover:bg-neutral-100' : 'text-neutral-300 hover:bg-neutral-100'}`}
-                    aria-label={layer.visible ? `Hide ${layer.name}` : `Show ${layer.name}`}
-                    title={layer.visible ? 'Visible — click to hide' : 'Hidden — click to show'}
-                  >
-                    {layer.visible ? <EyeIcon className="w-5 h-5" /> : <EyeOffIcon className="w-5 h-5" />}
-                  </button>
+                  {!layer.archived && (
+                    <button
+                      onClick={() => onToggleVisibility(layer.id)}
+                      className={`p-1.5 rounded-full shrink-0 transition-colors ${layer.visible ? 'text-neutral-700 hover:bg-neutral-100' : 'text-neutral-300 hover:bg-neutral-100'}`}
+                      aria-label={layer.visible ? `Hide ${layer.name}` : `Show ${layer.name}`}
+                      title={layer.visible ? 'Visible — click to hide' : 'Hidden — click to show'}
+                    >
+                      {layer.visible ? <EyeIcon className="w-5 h-5" /> : <EyeOffIcon className="w-5 h-5" />}
+                    </button>
+                  )}
 
                   <div className="flex-1 min-w-0">
                     {renamingId === layer.id ? (
@@ -334,13 +353,19 @@ export function LayersPanel({
                     ) : (
                       <span className="flex items-center gap-1.5 min-w-0">
                         {layer.pinned && <PinIcon className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
-                        <button
-                          onClick={() => startRename(layer)}
-                          className={`text-sm font-medium truncate text-left hover:underline ${layer.visible ? 'text-neutral-900' : 'text-neutral-400'}`}
-                          title="Click to rename"
-                        >
-                          {layer.name}
-                        </button>
+                        {layer.owned ? (
+                          <button
+                            onClick={() => startRename(layer)}
+                            className={`text-sm font-medium truncate text-left hover:underline ${layer.visible ? 'text-neutral-900' : 'text-neutral-400'}`}
+                            title="Click to rename"
+                          >
+                            {layer.name}
+                          </button>
+                        ) : (
+                          <span className={`text-sm font-medium truncate ${layer.visible ? 'text-neutral-900' : 'text-neutral-400'}`}>
+                            {layer.name}
+                          </span>
+                        )}
                         {!layer.owned && (
                           <span className="text-[10px] font-medium uppercase tracking-wide text-neutral-400 bg-neutral-100 rounded px-1.5 py-0.5 shrink-0">
                             Shared
@@ -355,103 +380,110 @@ export function LayersPanel({
 
                   <div className="relative shrink-0">
                     <button
-                      onClick={() => setMenuOpenId((id) => (id === layer.id ? null : layer.id))}
-                      className={`p-1.5 rounded-full transition-colors ${menuOpenId === layer.id ? 'bg-neutral-100 text-neutral-800' : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800'}`}
+                      onClick={(e) => toggleRowMenu(layer, e)}
+                      className={`p-1.5 rounded-full transition-colors ${openMenu?.layerId === layer.id ? 'bg-neutral-100 text-neutral-800' : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800'}`}
                       aria-label={`More options for ${layer.name}`}
                       title="More options"
                     >
                       <MoreIcon className="w-5 h-5" />
                     </button>
 
-                    {menuOpenId === layer.id && (
-                      <>
-                        <div className="fixed inset-0 z-[900]" onClick={() => setMenuOpenId(null)} />
-                        <div className="absolute right-0 mt-1.5 w-44 bg-white shadow-xl border border-neutral-200 rounded-xl overflow-hidden z-[901]">
-                          <button
-                            onClick={() => handleShare(layer)}
-                            disabled={sharingId === layer.id}
-                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-left text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+                    {openMenu?.layerId === layer.id &&
+                      createPortal(
+                        <>
+                          <div className="fixed inset-0 z-[900]" onClick={() => setOpenMenu(null)} />
+                          <div
+                            className="fixed w-44 bg-white shadow-xl border border-neutral-200 rounded-xl overflow-hidden z-[901]"
+                            style={{ right: openMenu.right, top: openMenu.top, bottom: openMenu.bottom }}
                           >
-                            {copiedId === layer.id ? (
-                              <CheckIcon className="w-4 h-4 text-green-600" />
-                            ) : (
-                              <ShareIcon className={`w-4 h-4 ${sharingId === layer.id ? 'animate-pulse' : ''}`} />
-                            )}
-                            {copiedId === layer.id ? 'Copied!' : 'Share'}
-                          </button>
-
-                          <button
-                            onClick={() => {
-                              setMenuOpenId(null)
-                              onTogglePinned(layer.id)
-                            }}
-                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-left text-neutral-700 hover:bg-neutral-50"
-                          >
-                            <PinIcon className={`w-4 h-4 ${layer.pinned ? 'text-amber-500' : ''}`} />
-                            {layer.pinned ? 'Unpin' : 'Pin'}
-                          </button>
-
-                          {!layer.owned && (
                             <button
-                              onClick={() => handleRefresh(layer)}
-                              disabled={refreshingId === layer.id}
+                              onClick={() => handleShare(layer)}
+                              disabled={sharingId === layer.id}
                               className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-left text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
                             >
-                              {refreshedId === layer.id ? (
+                              {copiedId === layer.id ? (
                                 <CheckIcon className="w-4 h-4 text-green-600" />
                               ) : (
-                                <RefreshIcon className={`w-4 h-4 ${refreshingId === layer.id ? 'animate-spin' : ''}`} />
+                                <ShareIcon className={`w-4 h-4 ${sharingId === layer.id ? 'animate-pulse' : ''}`} />
                               )}
-                              {refreshedId === layer.id ? 'Refreshed!' : 'Refresh'}
+                              {copiedId === layer.id ? 'Copied!' : 'Share'}
                             </button>
-                          )}
 
-                          <button
-                            onClick={() => {
-                              setMenuOpenId(null)
-                              startRename(layer)
-                            }}
-                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-left text-neutral-700 hover:bg-neutral-50"
-                          >
-                            <PencilIcon className="w-4 h-4" />
-                            Rename
-                          </button>
+                            <button
+                              onClick={() => {
+                                setOpenMenu(null)
+                                onTogglePinned(layer.id)
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-left text-neutral-700 hover:bg-neutral-50"
+                            >
+                              <PinIcon className={`w-4 h-4 ${layer.pinned ? 'text-amber-500' : ''}`} />
+                              {layer.pinned ? 'Unpin' : 'Pin'}
+                            </button>
 
-                          <button
-                            onClick={() => {
-                              setMenuOpenId(null)
-                              setDuplicatingId((id) => (id === layer.id ? null : layer.id))
-                            }}
-                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-left text-neutral-700 hover:bg-neutral-50"
-                          >
-                            <DuplicateIcon className="w-4 h-4" />
-                            Copy
-                          </button>
+                            {!layer.owned && (
+                              <button
+                                onClick={() => handleRefresh(layer)}
+                                disabled={refreshingId === layer.id}
+                                className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-left text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+                              >
+                                {refreshedId === layer.id ? (
+                                  <CheckIcon className="w-4 h-4 text-green-600" />
+                                ) : (
+                                  <RefreshIcon className={`w-4 h-4 ${refreshingId === layer.id ? 'animate-spin' : ''}`} />
+                                )}
+                                {refreshedId === layer.id ? 'Refreshed!' : 'Refresh'}
+                              </button>
+                            )}
 
-                          <button
-                            onClick={() => {
-                              setMenuOpenId(null)
-                              onToggleArchived(layer.id)
-                            }}
-                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-left text-neutral-700 hover:bg-neutral-50"
-                          >
-                            <ArchiveIcon className="w-4 h-4" />
-                            {layer.archived ? 'Unarchive' : 'Archive'}
-                          </button>
+                            {layer.owned && (
+                              <button
+                                onClick={() => {
+                                  setOpenMenu(null)
+                                  startRename(layer)
+                                }}
+                                className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-left text-neutral-700 hover:bg-neutral-50"
+                              >
+                                <PencilIcon className="w-4 h-4" />
+                                Rename
+                              </button>
+                            )}
 
-                          <button
-                            onClick={() => {
-                              setMenuOpenId(null)
-                              if (window.confirm(`Delete layer "${layer.name}"? This can't be undone.`)) onDeleteLayer(layer.id)
-                            }}
-                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-left text-red-600 hover:bg-red-50"
-                          >
-                            <TrashIcon className="w-4 h-4" />
-                            Delete
-                          </button>
-                        </div>
-                      </>
-                    )}
+                            <button
+                              onClick={() => {
+                                setOpenMenu(null)
+                                setDuplicatingId((id) => (id === layer.id ? null : layer.id))
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-left text-neutral-700 hover:bg-neutral-50"
+                            >
+                              <DuplicateIcon className="w-4 h-4" />
+                              Copy
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                setOpenMenu(null)
+                                onToggleArchived(layer.id)
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-left text-neutral-700 hover:bg-neutral-50"
+                            >
+                              <ArchiveIcon className="w-4 h-4" />
+                              {layer.archived ? 'Unarchive' : 'Archive'}
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                setOpenMenu(null)
+                                if (window.confirm(`Delete layer "${layer.name}"? This can't be undone.`)) onDeleteLayer(layer.id)
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-left text-red-600 hover:bg-red-50"
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                              Delete
+                            </button>
+                          </div>
+                        </>,
+                        document.body,
+                      )}
                   </div>
                 </li>
 
