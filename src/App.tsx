@@ -15,11 +15,9 @@ import { SettingsPanel } from './components/SettingsPanel'
 import { SignInScreen } from './components/SignInScreen'
 import { SharedLayerView } from './components/SharedLayerView'
 import { LoadingScreen } from './components/LoadingScreen'
-import { CountryPromptScreen } from './components/CountryPromptScreen'
 import { SettingsIcon } from './components/icons'
 import { useAuth } from './lib/useAuth'
 import { useCloudLayers } from './lib/useCloudLayers'
-import { useUserProfile } from './lib/useUserProfile'
 import { useNearbyLayer, NEARBY_LAYER_ID } from './lib/useNearbyLayer'
 import { hasShareParam, readSharedLayerFromUrl } from './lib/share'
 import type { GeoPosition } from './lib/geolocation'
@@ -29,11 +27,9 @@ import type { Layer } from './types'
 interface MapAppProps {
   user: User
   onSignOut: () => void
-  country: string | null
-  onSetCountry: (code: string) => void
 }
 
-function MapApp({ user, onSignOut, country, onSetCountry }: MapAppProps) {
+function MapApp({ user, onSignOut }: MapAppProps) {
   const {
     layers,
     importedLayerName,
@@ -287,7 +283,7 @@ function MapApp({ user, onSignOut, country, onSetCountry }: MapAppProps) {
       {searchOpen && (
         <AddressSearchSheet
           activeLayerName={activeLayer?.name ?? null}
-          countryCode={country}
+          countryCode={null}
           onSelect={handleSearchSelect}
           onClose={() => setSearchOpen(false)}
         />
@@ -314,13 +310,7 @@ function MapApp({ user, onSignOut, country, onSetCountry }: MapAppProps) {
       )}
 
       {settingsOpen && (
-        <SettingsPanel
-          user={user}
-          onSignOut={onSignOut}
-          onClose={() => setSettingsOpen(false)}
-          country={country}
-          onSetCountry={onSetCountry}
-        />
+        <SettingsPanel user={user} onSignOut={onSignOut} onClose={() => setSettingsOpen(false)} />
       )}
     </div>
   )
@@ -328,7 +318,6 @@ function MapApp({ user, onSignOut, country, onSetCountry }: MapAppProps) {
 
 function App() {
   const { user, loading, signInWithGoogle, continueWithEmail, signOut, configured, error } = useAuth()
-  const { country, setCountry, loading: countryLoading } = useUserProfile(user?.uid ?? null)
   const [sharedPreview, setSharedPreview] = useState<Layer | null>(null)
   const [previewFetched, setPreviewFetched] = useState(false)
 
@@ -375,10 +364,7 @@ function App() {
     )
   }
 
-  if (countryLoading) return <LoadingScreen />
-  if (!country) return <CountryPromptScreen onSubmit={setCountry} />
-
-  return <MapApp user={user} onSignOut={signOut} country={country} onSetCountry={setCountry} />
+  return <MapApp user={user} onSignOut={signOut} />
 }
 
 export default App

@@ -13,11 +13,20 @@ export function useUserProfile(uid: string | null) {
       return
     }
     setLoading(true)
-    return onSnapshot(doc(db, 'users', uid), (snap) => {
-      const data = snap.data()
-      setCountryState((data?.country as string | undefined) ?? null)
-      setLoading(false)
-    })
+    return onSnapshot(
+      doc(db, 'users', uid),
+      (snap) => {
+        const data = snap.data()
+        setCountryState((data?.country as string | undefined) ?? null)
+        setLoading(false)
+      },
+      () => {
+        // Firestore rules for this doc may not be deployed yet — fail open
+        // rather than leaving loading stuck forever.
+        setCountryState(null)
+        setLoading(false)
+      },
+    )
   }, [uid])
 
   const setCountry = useCallback(

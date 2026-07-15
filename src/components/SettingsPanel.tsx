@@ -1,20 +1,17 @@
 import { useEffect, useState } from 'react'
 import type { User } from 'firebase/auth'
 import { XIcon, LocateIcon } from './icons'
-import { CountrySelect } from './CountrySelect'
 import { getCurrentPosition } from '../lib/geolocation'
 
 interface SettingsPanelProps {
   user: User | null
   onSignOut: () => void
   onClose: () => void
-  country: string | null
-  onSetCountry: (code: string) => void
 }
 
 type LocationStatus = 'unknown' | 'checking' | 'granted' | 'denied' | 'prompt'
 
-export function SettingsPanel({ user, onSignOut, onClose, country, onSetCountry }: SettingsPanelProps) {
+export function SettingsPanel({ user, onSignOut, onClose }: SettingsPanelProps) {
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('unknown')
 
   useEffect(() => {
@@ -69,14 +66,6 @@ export function SettingsPanel({ user, onSignOut, onClose, country, onSetCountry 
               </div>
             </div>
           )}
-
-          <div className="px-5 py-4 border-b border-neutral-100">
-            <label htmlFor="settings-country" className="block text-sm font-medium text-neutral-900 mb-1.5">
-              Country
-            </label>
-            <p className="text-xs text-neutral-400 mb-2">Address search results are limited to this country.</p>
-            <CountrySelect id="settings-country" value={country} onChange={onSetCountry} />
-          </div>
 
           <div className="px-5 py-4 border-b border-neutral-100">
             <p className="text-sm font-medium text-neutral-900 mb-1.5">Location access</p>
