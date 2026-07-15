@@ -6,11 +6,12 @@ import { LocateIcon, SearchIcon, XIcon } from './icons'
 
 interface AddressSearchSheetProps {
   activeLayerName: string | null
+  countryCode: string | null
   onSelect: (result: GeocodeResult) => void
   onClose: () => void
 }
 
-export function AddressSearchSheet({ activeLayerName, onSelect, onClose }: AddressSearchSheetProps) {
+export function AddressSearchSheet({ activeLayerName, countryCode, onSelect, onClose }: AddressSearchSheetProps) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<GeocodeResult[]>([])
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
@@ -30,7 +31,7 @@ export function AddressSearchSheet({ activeLayerName, onSelect, onClose }: Addre
     abortRef.current = controller
     setStatus('loading')
     const timer = setTimeout(() => {
-      searchPlaces(trimmed, controller.signal)
+      searchPlaces(trimmed, controller.signal, countryCode)
         .then((r) => {
           setResults(r)
           setStatus('idle')
@@ -44,7 +45,7 @@ export function AddressSearchSheet({ activeLayerName, onSelect, onClose }: Addre
       clearTimeout(timer)
       controller.abort()
     }
-  }, [query])
+  }, [query, countryCode])
 
   const handleUseCurrentLocation = async () => {
     setLocating(true)

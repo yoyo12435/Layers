@@ -353,19 +353,9 @@ export function LayersPanel({
                     ) : (
                       <span className="flex items-center gap-1.5 min-w-0">
                         {layer.pinned && <PinIcon className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
-                        {layer.owned ? (
-                          <button
-                            onClick={() => startRename(layer)}
-                            className={`text-sm font-medium truncate text-left hover:underline ${layer.visible ? 'text-neutral-900' : 'text-neutral-400'}`}
-                            title="Click to rename"
-                          >
-                            {layer.name}
-                          </button>
-                        ) : (
-                          <span className={`text-sm font-medium truncate ${layer.visible ? 'text-neutral-900' : 'text-neutral-400'}`}>
-                            {layer.name}
-                          </span>
-                        )}
+                        <span className={`text-sm font-medium truncate ${layer.visible ? 'text-neutral-900' : 'text-neutral-400'}`}>
+                          {layer.name}
+                        </span>
                         {!layer.owned && (
                           <span className="text-[10px] font-medium uppercase tracking-wide text-neutral-400 bg-neutral-100 rounded px-1.5 py-0.5 shrink-0">
                             Shared

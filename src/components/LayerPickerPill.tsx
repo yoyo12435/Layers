@@ -32,6 +32,11 @@ export function LayerPickerPill({ ownedVisibleLayers, activeLayerId, onSelect }:
         className="flex items-center gap-1.5 bg-white shadow-lg border border-neutral-200 rounded-full pl-3 pr-2.5 py-2 text-sm font-medium text-neutral-800 max-w-full"
       >
         <span className="truncate">{activeLayer ? activeLayer.name : 'Choose a layer'}</span>
+        {activeLayer?.archived && (
+          <span className="text-[10px] font-medium uppercase tracking-wide text-neutral-400 bg-neutral-100 rounded px-1.5 py-0.5 shrink-0">
+            Archived
+          </span>
+        )}
         <ChevronDownIcon className="w-4 h-4 shrink-0 text-neutral-400" />
       </button>
 
@@ -45,11 +50,16 @@ export function LayerPickerPill({ ownedVisibleLayers, activeLayerId, onSelect }:
                   onSelect(layer.id)
                   setOpen(false)
                 }}
-                className={`w-full text-left px-3.5 py-2.5 text-sm truncate hover:bg-neutral-50 ${
+                className={`w-full flex items-center gap-1.5 text-left px-3.5 py-2.5 text-sm hover:bg-neutral-50 ${
                   layer.id === activeLayerId ? 'font-semibold text-neutral-900' : 'text-neutral-600'
                 }`}
               >
-                {layer.name}
+                <span className="truncate">{layer.name}</span>
+                {layer.archived && (
+                  <span className="text-[10px] font-medium uppercase tracking-wide text-neutral-400 bg-neutral-100 rounded px-1.5 py-0.5 shrink-0">
+                    Archived
+                  </span>
+                )}
               </button>
             ))}
           </div>

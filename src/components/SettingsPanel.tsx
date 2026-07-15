@@ -1,13 +1,49 @@
+import { useEffect, useState } from 'react'
 import type { User } from 'firebase/auth'
-import { XIcon } from './icons'
+import { XIcon, LocateIcon } from './icons'
+import { CountrySelect } from './CountrySelect'
+import { getCurrentPosition } from '../lib/geolocation'
 
 interface SettingsPanelProps {
   user: User | null
   onSignOut: () => void
   onClose: () => void
+  country: string | null
+  onSetCountry: (code: string) => void
 }
 
-export function SettingsPanel({ user, onSignOut, onClose }: SettingsPanelProps) {
+type LocationStatus = 'unknown' | 'checking' | 'granted' | 'denied' | 'prompt'
+
+export function SettingsPanel({ user, onSignOut, onClose, country, onSetCountry }: SettingsPanelProps) {
+  const [locationStatus, setLocationStatus] = useState<LocationStatus>('unknown')
+
+  useEffect(() => {
+    const nav = navigator as Navigator & { permissions?: { query: (opts: { name: string }) => Promise<PermissionStatus> } }
+    if (!nav.permissions?.query) return
+    let status: PermissionStatus | null = null
+    nav.permissions
+      .query({ name: 'geolocation' })
+      .then((result) => {
+        status = result
+        setLocationStatus(result.state as LocationStatus)
+        result.onchange = () => setLocationStatus(result.state as LocationStatus)
+      })
+      .catch(() => {})
+    return () => {
+      if (status) status.onchange = null
+    }
+  }, [])
+
+  const handleRequestLocation = async () => {
+    setLocationStatus('checking')
+    try {
+      await getCurrentPosition()
+      setLocationStatus('granted')
+    } catch {
+      setLocationStatus('denied')
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-[800]">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
@@ -33,6 +69,37 @@ export function SettingsPanel({ user, onSignOut, onClose }: SettingsPanelProps) 
               </div>
             </div>
           )}
+
+          <div className="px-5 py-4 border-b border-neutral-100">
+            <label htmlFor="settings-country" className="block text-sm font-medium text-neutral-900 mb-1.5">
+              Country
+            </label>
+            <p className="text-xs text-neutral-400 mb-2">Address search results are limited to this country.</p>
+            <CountrySelect id="settings-country" value={country} onChange={onSetCountry} />
+          </div>
+
+          <div className="px-5 py-4 border-b border-neutral-100">
+            <p className="text-sm font-medium text-neutral-900 mb-1.5">Location access</p>
+            {locationStatus === 'granted' && <p className="text-xs text-green-700">Allowed — "Find my location" can work.</p>}
+            {locationStatus === 'denied' && (
+              <p className="text-xs text-red-600 mb-2">
+                Blocked. Enable location for this site in your browser or phone's site settings, then try again.
+              </p>
+            )}
+            {(locationStatus === 'prompt' || locationStatus === 'unknown') && (
+              <p className="text-xs text-neutral-400 mb-2">Not yet allowed. Grant access to use "Find my location".</p>
+            )}
+            {locationStatus !== 'granted' && (
+              <button
+                onClick={handleRequestLocation}
+                disabled={locationStatus === 'checking'}
+                className="flex items-center gap-2 text-sm font-medium text-neutral-800 border border-neutral-300 rounded-lg px-3 py-2 hover:bg-neutral-50 disabled:opacity-60"
+              >
+                <LocateIcon className={`w-4 h-4 ${locationStatus === 'checking' ? 'animate-spin' : ''}`} />
+                {locationStatus === 'checking' ? 'Checking…' : 'Allow location access'}
+              </button>
+            )}
+          </div>
 
           <div className="px-5 py-4">
             <button

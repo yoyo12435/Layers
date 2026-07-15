@@ -15,9 +15,11 @@ import { SettingsPanel } from './components/SettingsPanel'
 import { SignInScreen } from './components/SignInScreen'
 import { SharedLayerView } from './components/SharedLayerView'
 import { LoadingScreen } from './components/LoadingScreen'
+import { CountryPromptScreen } from './components/CountryPromptScreen'
 import { SettingsIcon } from './components/icons'
 import { useAuth } from './lib/useAuth'
 import { useCloudLayers } from './lib/useCloudLayers'
+import { useUserProfile } from './lib/useUserProfile'
 import { useNearbyLayer, NEARBY_LAYER_ID } from './lib/useNearbyLayer'
 import { hasShareParam, readSharedLayerFromUrl } from './lib/share'
 import type { GeoPosition } from './lib/geolocation'
@@ -27,9 +29,11 @@ import type { Layer } from './types'
 interface MapAppProps {
   user: User
   onSignOut: () => void
+  country: string | null
+  onSetCountry: (code: string) => void
 }
 
-function MapApp({ user, onSignOut }: MapAppProps) {
+function MapApp({ user, onSignOut, country, onSetCountry }: MapAppProps) {
   const {
     layers,
     importedLayerName,
@@ -68,12 +72,15 @@ function MapApp({ user, onSignOut }: MapAppProps) {
   // archive view, regardless of their own visible flag.
   const visibleLayers = layers.filter((l) => l.visible && !l.archived)
   const ownedLayers = layers.filter((l) => l.owned && !l.archived)
-  const ownedVisibleLayers = visibleLayers.filter((l) => l.owned)
+  // Archived layers can still be picked as the active layer for adding new
+  // locations to (they just never render on the map) — this is separate
+  // from visibleLayers, which drives what's actually plotted.
+  const pickableLayers = layers.filter((l) => l.owned && (l.archived || l.visible))
 
   useEffect(() => {
-    if (activeLayerId && ownedVisibleLayers.some((l) => l.id === activeLayerId)) return
-    setActiveLayerId(ownedVisibleLayers[0]?.id ?? null)
-  }, [activeLayerId, ownedVisibleLayers])
+    if (activeLayerId && pickableLayers.some((l) => l.id === activeLayerId)) return
+    setActiveLayerId(pickableLayers[0]?.id ?? null)
+  }, [activeLayerId, pickableLayers])
 
   const flatLocations = useMemo<FlatLocation[]>(() => {
     const accountLocations = visibleLayers.flatMap((layer) =>
@@ -96,7 +103,7 @@ function MapApp({ user, onSignOut }: MapAppProps) {
 
   const findLayerById = (id: string): Layer | null => (id === NEARBY_LAYER_ID ? nearbyLayer : layers.find((l) => l.id === id) ?? null)
 
-  const activeLayer = ownedVisibleLayers.find((l) => l.id === activeLayerId) ?? null
+  const activeLayer = pickableLayers.find((l) => l.id === activeLayerId) ?? null
   const selectedLayer = selected ? findLayerById(selected.layerId) : null
   const editingLayer = editingItem ? findLayerById(editingItem.layerId) : null
   const editingLayerIds = editingItem
@@ -182,11 +189,11 @@ function MapApp({ user, onSignOut }: MapAppProps) {
         onOpenSearch={() => setSearchOpen(true)}
       />
 
-      <LocateControl onLocated={handleLocated} />
+      <LocateControl onLocated={handleLocated} onOpenSettings={() => setSettingsOpen(true)} />
 
       {editMode && (
         <LayerPickerPill
-          ownedVisibleLayers={ownedVisibleLayers}
+          ownedVisibleLayers={pickableLayers}
           activeLayerId={activeLayerId}
           onSelect={(id) => {
             setActiveLayerId(id)
@@ -280,6 +287,7 @@ function MapApp({ user, onSignOut }: MapAppProps) {
       {searchOpen && (
         <AddressSearchSheet
           activeLayerName={activeLayer?.name ?? null}
+          countryCode={country}
           onSelect={handleSearchSelect}
           onClose={() => setSearchOpen(false)}
         />
@@ -306,7 +314,13 @@ function MapApp({ user, onSignOut }: MapAppProps) {
       )}
 
       {settingsOpen && (
-        <SettingsPanel user={user} onSignOut={onSignOut} onClose={() => setSettingsOpen(false)} />
+        <SettingsPanel
+          user={user}
+          onSignOut={onSignOut}
+          onClose={() => setSettingsOpen(false)}
+          country={country}
+          onSetCountry={onSetCountry}
+        />
       )}
     </div>
   )
@@ -314,6 +328,7 @@ function MapApp({ user, onSignOut }: MapAppProps) {
 
 function App() {
   const { user, loading, signInWithGoogle, continueWithEmail, signOut, configured, error } = useAuth()
+  const { country, setCountry, loading: countryLoading } = useUserProfile(user?.uid ?? null)
   const [sharedPreview, setSharedPreview] = useState<Layer | null>(null)
   const [previewFetched, setPreviewFetched] = useState(false)
 
@@ -360,7 +375,10 @@ function App() {
     )
   }
 
-  return <MapApp user={user} onSignOut={signOut} />
+  if (countryLoading) return <LoadingScreen />
+  if (!country) return <CountryPromptScreen onSubmit={setCountry} />
+
+  return <MapApp user={user} onSignOut={signOut} country={country} onSetCountry={setCountry} />
 }
 
 export default App
