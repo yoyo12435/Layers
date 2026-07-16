@@ -19,6 +19,21 @@ export function geolocationErrorMessage(err: unknown): string {
   return "Couldn't get your location. Check your device's location settings."
 }
 
+// Web pages can't deep-link into a phone's OS-level Settings app — there's
+// no JS API for that on iOS or Android — so the best a "shortcut" can do is
+// point at the exact steps for this device instead of guessing at generic
+// wording.
+export function locationPermissionSteps(): string[] {
+  const ua = navigator.userAgent
+  if (/iPhone|iPad|iPod/.test(ua)) {
+    return ['Open the Settings app', 'Scroll down to Safari (or your browser)', 'Tap Location, then choose "Allow" or "Ask Next Time"']
+  }
+  if (/Android/.test(ua)) {
+    return ['Tap the lock or info icon next to the address bar', 'Tap Permissions (or Site settings)', 'Set Location to Allow']
+  }
+  return ['Click the lock or info icon next to the address bar', 'Open Site settings', 'Set Location to Allow']
+}
+
 function requestPosition(options: PositionOptions): Promise<GeoPosition> {
   return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(

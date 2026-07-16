@@ -34,10 +34,10 @@ interface MapViewProps {
 const DEFAULT_CENTER: LatLngExpression = [40.7128, -74.006]
 const DEFAULT_ZOOM = 12
 
-function ClickHandler({ active, onClick }: { active: boolean; onClick: (lat: number, lng: number) => void }) {
+function ClickHandler({ onClick }: { onClick: (lat: number, lng: number) => void }) {
   useMapEvents({
     click(e) {
-      if (active) onClick(e.latlng.lat, e.latlng.lng)
+      onClick(e.latlng.lat, e.latlng.lng)
     },
   })
   return null
@@ -97,7 +97,7 @@ export function MapView({ locations, editMode, pendingPoint, currentLocation, fl
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <ClickHandler active={editMode} onClick={onMapClick} />
+        <ClickHandler onClick={onMapClick} />
         <FitToLocations locations={locations} />
         <FlyToController flyTo={flyTo} />
         <BoundsReporter onBoundsChange={onBoundsChange} />

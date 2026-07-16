@@ -64,6 +64,7 @@ function MapApp({ user, onSignOut }: MapAppProps) {
   const [currentLocation, setCurrentLocation] = useState<GeoPosition | null>(null)
   const [flyTo, setFlyTo] = useState<{ lat: number; lng: number; zoom?: number; token: number } | null>(null)
   const [bounds, setBounds] = useState<LatLngBounds | null>(null)
+  const [mapClickToken, setMapClickToken] = useState(0)
 
   const { nearbyLayer, toggleNearbyVisible, loading: nearbyLoading, tooZoomedOut: nearbyTooZoomedOut } = useNearbyLayer(bounds)
 
@@ -135,6 +136,7 @@ function MapApp({ user, onSignOut }: MapAppProps) {
   }
 
   const handleMapClick = (lat: number, lng: number) => {
+    setMapClickToken((t) => t + 1)
     if (!editMode || !activeLayer || pendingPoint || editingItem) return
     setSelected(null)
     setPendingPoint([lat, lng])
@@ -200,7 +202,7 @@ function MapApp({ user, onSignOut }: MapAppProps) {
         onOpenSearch={() => setSearchOpen(true)}
       />
 
-      <LocateControl onLocated={handleLocated} onOpenSettings={() => setSettingsOpen(true)} />
+      <LocateControl onLocated={handleLocated} mapClickSignal={mapClickToken} />
 
       {editMode && (
         <LayerPickerPill

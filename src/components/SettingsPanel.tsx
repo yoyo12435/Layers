@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { User } from 'firebase/auth'
 import { XIcon, LocateIcon } from './icons'
-import { getCurrentPosition } from '../lib/geolocation'
+import { getCurrentPosition, locationPermissionSteps } from '../lib/geolocation'
 
 interface SettingsPanelProps {
   user: User | null
@@ -71,9 +71,14 @@ export function SettingsPanel({ user, onSignOut, onClose }: SettingsPanelProps) 
             <p className="text-sm font-medium text-neutral-900 mb-1.5">Location access</p>
             {locationStatus === 'granted' && <p className="text-xs text-green-700">Allowed — "Find my location" can work.</p>}
             {locationStatus === 'denied' && (
-              <p className="text-xs text-red-600 mb-2">
-                Blocked. Enable location for this site in your browser or phone's site settings, then try again.
-              </p>
+              <div className="text-xs text-red-600 mb-2">
+                <p className="mb-1">Blocked. To fix it:</p>
+                <ol className="list-decimal list-inside space-y-0.5">
+                  {locationPermissionSteps().map((step, i) => (
+                    <li key={i}>{step}</li>
+                  ))}
+                </ol>
+              </div>
             )}
             {(locationStatus === 'prompt' || locationStatus === 'unknown') && (
               <p className="text-xs text-neutral-400 mb-2">Not yet allowed. Grant access to use "Find my location".</p>
