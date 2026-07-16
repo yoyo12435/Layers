@@ -1,10 +1,10 @@
-export type Category = 'park' | 'restaurant' | 'entertainment' | 'other'
+export type Category = 'park' | 'restaurant' | 'bar' | 'entertainment' | 'other'
 
 export interface Location {
   id: string
   name: string
   description: string
-  rating: number // 1-5
+  rating: number // 0-5, in half-star increments
   category: Category
   lat: number
   lng: number
@@ -27,6 +27,7 @@ export interface Layer {
 export const CATEGORY_COLORS: Record<Category, string> = {
   park: '#22c55e',
   restaurant: '#3b82f6',
+  bar: '#ec4899',
   entertainment: '#a855f7',
   other: '#171717',
 }
@@ -34,8 +35,9 @@ export const CATEGORY_COLORS: Record<Category, string> = {
 export const CATEGORY_LABELS: Record<Category, string> = {
   park: 'Park',
   restaurant: 'Restaurant',
+  bar: 'Bar',
   entertainment: 'Entertainment',
   other: 'Other',
 }
 
-export const CATEGORIES: Category[] = ['park', 'restaurant', 'entertainment', 'other']
+export const CATEGORIES: Category[] = ['park', 'restaurant', 'bar', 'entertainment', 'other']

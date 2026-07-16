@@ -30,8 +30,8 @@ const AMENITY_CATEGORY: Record<string, Category> = {
   restaurant: 'restaurant',
   cafe: 'restaurant',
   fast_food: 'restaurant',
-  bar: 'entertainment',
-  pub: 'entertainment',
+  bar: 'bar',
+  pub: 'bar',
   nightclub: 'entertainment',
 }
 
