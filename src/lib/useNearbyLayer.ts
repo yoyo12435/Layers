@@ -20,7 +20,7 @@ function toLocations(places: Awaited<ReturnType<typeof fetchNearbyPlaces>>): Loc
 
 export function useNearbyLayer(bounds: LatLngBounds | null) {
   const [locations, setLocations] = useState<Location[]>([])
-  const [visible, setVisible] = useState(true)
+  const [visible, setVisible] = useState(false)
   const [loading, setLoading] = useState(false)
   const [tooZoomedOut, setTooZoomedOut] = useState(false)
   const lastKeyRef = useRef<string | null>(null)

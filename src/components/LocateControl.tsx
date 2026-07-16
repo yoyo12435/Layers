@@ -25,10 +25,16 @@ export function LocateControl({ onLocated, mapClickSignal }: LocateControlProps)
   }, [mapClickSignal])
 
   const handleClick = async () => {
+    // A second press while an error is showing just dismisses it, rather
+    // than repeating a lookup that (for permission-denied especially) would
+    // just fail again and re-show the identical message.
+    if (error) {
+      setError(null)
+      setPermissionDenied(false)
+      setShowHelp(false)
+      return
+    }
     setLocating(true)
-    setError(null)
-    setPermissionDenied(false)
-    setShowHelp(false)
     try {
       const position = await getCurrentPosition()
       onLocated(position)
