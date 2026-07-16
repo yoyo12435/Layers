@@ -20,6 +20,7 @@ import { useAuth } from './lib/useAuth'
 import { useCloudLayers } from './lib/useCloudLayers'
 import { useNearbyLayer, NEARBY_LAYER_ID } from './lib/useNearbyLayer'
 import { hasShareParam, readSharedLayerFromUrl } from './lib/share'
+import { sortLayers } from './lib/sortLayers'
 import type { GeoPosition } from './lib/geolocation'
 import type { GeocodeResult } from './lib/geocode'
 import type { Layer } from './types'
@@ -53,6 +54,8 @@ function MapApp({ user, onSignOut }: MapAppProps) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [activeLayerId, setActiveLayerId] = useState<string | null>(null)
+  const [hasOpenedEditOnce, setHasOpenedEditOnce] = useState(false)
+  const [lastLocationLayerId, setLastLocationLayerId] = useState<string | null>(null)
   const [pendingPoint, setPendingPoint] = useState<LatLngTuple | null>(null)
   const [pendingInitialName, setPendingInitialName] = useState<string | undefined>(undefined)
   const [editingItem, setEditingItem] = useState<FlatLocation | null>(null)
@@ -68,10 +71,10 @@ function MapApp({ user, onSignOut }: MapAppProps) {
   // archive view, regardless of their own visible flag.
   const visibleLayers = layers.filter((l) => l.visible && !l.archived)
   const ownedLayers = layers.filter((l) => l.owned && !l.archived)
-  // Archived layers can still be picked as the active layer for adding new
-  // locations to (they just never render on the map) — this is separate
-  // from visibleLayers, which drives what's actually plotted.
-  const pickableLayers = layers.filter((l) => l.owned && (l.archived || l.visible))
+  // Any owned layer can be picked as the active layer for adding new
+  // locations to, whether or not it's currently shown on the map — this is
+  // separate from visibleLayers, which drives what's actually plotted.
+  const pickableLayers = layers.filter((l) => l.owned)
 
   useEffect(() => {
     if (activeLayerId && pickableLayers.some((l) => l.id === activeLayerId)) return
@@ -115,7 +118,19 @@ function MapApp({ user, onSignOut }: MapAppProps) {
   }
 
   const handleToggleEdit = () => {
-    setEditMode((v) => !v)
+    setEditMode((v) => {
+      const turningOn = !v
+      if (turningOn) {
+        if (!hasOpenedEditOnce) {
+          setHasOpenedEditOnce(true)
+          const alphabetical = sortLayers(pickableLayers, 'alpha')
+          setActiveLayerId(alphabetical[0]?.id ?? null)
+        } else if (lastLocationLayerId && pickableLayers.some((l) => l.id === lastLocationLayerId)) {
+          setActiveLayerId(lastLocationLayerId)
+        }
+      }
+      return turningOn
+    })
     clearInteractions()
   }
 
@@ -227,6 +242,7 @@ function MapApp({ user, onSignOut }: MapAppProps) {
           initialName={pendingInitialName}
           onSubmit={(location) => {
             addLocation(activeLayer.id, location)
+            setLastLocationLayerId(activeLayer.id)
             setPendingPoint(null)
             setPendingInitialName(undefined)
           }}
