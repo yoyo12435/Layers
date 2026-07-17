@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react'
 import { StarIcon } from './icons'
 
 interface StarRatingProps {
@@ -17,8 +18,56 @@ function starFill(value: number, n: number): 'empty' | 'half' | 'full' {
 
 export function StarRating({ value, onChange, size = 'w-10 h-10' }: StarRatingProps) {
   const interactive = Boolean(onChange)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [isDragging, setIsDragging] = useState(false)
+
+  const updateRatingFromEvent = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!containerRef.current || !onChange) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+    const x = clientX - rect.left
+    const rating = Math.max(0, Math.min(5, Math.round((x / rect.width) * 10) / 2))
+    onChange(rating)
+  }
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!interactive) return
+    setIsDragging(true)
+    updateRatingFromEvent(e)
+  }
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!interactive) return
+    setIsDragging(true)
+    updateRatingFromEvent(e)
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging && interactive) updateRatingFromEvent(e)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (isDragging && interactive) updateRatingFromEvent(e)
+  }
+
+  const handleMouseUp = () => setIsDragging(false)
+  const handleTouchEnd = () => setIsDragging(false)
+
   return (
-    <div className="flex items-center gap-1" role={interactive ? 'radiogroup' : undefined} aria-label="Rating">
+    <div
+      ref={containerRef}
+      className={`flex items-center gap-3 ${interactive ? 'select-none' : ''}`}
+      role={interactive ? 'radiogroup' : undefined}
+      aria-label="Rating"
+      onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
+      onMouseMove={handleMouseMove}
+      onTouchMove={handleTouchMove}
+      onMouseUp={handleMouseUp}
+      onTouchEnd={handleTouchEnd}
+      onMouseLeave={handleMouseUp}
+      style={interactive ? { cursor: 'pointer' } : undefined}
+    >
       {[1, 2, 3, 4, 5].map((n) => {
         const fill = starFill(value, n)
         return (
@@ -31,22 +80,6 @@ export function StarRating({ value, onChange, size = 'w-10 h-10' }: StarRatingPr
               >
                 <StarIcon className="w-full h-full" filled />
               </span>
-            )}
-            {interactive && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => onChange?.(n - 0.5)}
-                  className="absolute inset-y-0 left-0 w-1/2 cursor-pointer"
-                  aria-label={`${n - 0.5} stars`}
-                />
-                <button
-                  type="button"
-                  onClick={() => onChange?.(n)}
-                  className="absolute inset-y-0 right-0 w-1/2 cursor-pointer"
-                  aria-label={`${n} stars`}
-                />
-              </>
             )}
           </span>
         )

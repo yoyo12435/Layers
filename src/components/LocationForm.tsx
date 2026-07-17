@@ -68,16 +68,17 @@ export function LocationForm({ title = 'New location', submitLabel = 'Add locati
         <StarRating value={rating} onChange={setRating} />
       </div>
 
-      <div className="flex flex-wrap gap-1.5">
-        {CATEGORIES.map((c) => {
+      <div className="grid grid-cols-2 gap-2">
+        {CATEGORIES.map((c, i) => {
           const color = CATEGORY_COLORS[c]
           const active = category === c
+          const isLastOdd = CATEGORIES.length % 2 === 1 && i === CATEGORIES.length - 1
           return (
             <button
               key={c}
               type="button"
               onClick={() => setCategory(c)}
-              className="text-xs font-medium px-2.5 py-1 rounded-full border transition-colors"
+              className={`text-sm font-medium px-3 py-2.5 rounded-lg border transition-colors ${isLastOdd ? 'col-span-2' : ''}`}
               style={
                 active
                   ? { color: 'white', backgroundColor: color, borderColor: color }

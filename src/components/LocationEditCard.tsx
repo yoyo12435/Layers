@@ -22,8 +22,17 @@ export function LocationEditCard({ location, ownedLayers, initialLayerIds, onSav
 
   return (
     <div className="absolute top-24 left-1/2 -translate-x-1/2 z-[500] w-[min(360px,calc(100vw-2rem))] max-h-[calc(100%-7rem)] overflow-y-auto">
+      <LocationForm
+        title="Edit location"
+        submitLabel="Save changes"
+        initial={location}
+        onSubmit={(updates) => onSave(updates, layerIds)}
+        onCancel={onCancel}
+        onDelete={onDelete}
+      />
+
       {ownedLayers.length > 1 && (
-        <div className="mb-2 bg-white border border-neutral-200 rounded-xl px-3.5 py-3">
+        <div className="mt-2 bg-white border border-neutral-200 rounded-xl px-3.5 py-3">
           {!showLayerPicker ? (
             <button
               type="button"
@@ -62,15 +71,6 @@ export function LocationEditCard({ location, ownedLayers, initialLayerIds, onSav
           )}
         </div>
       )}
-
-      <LocationForm
-        title="Edit location"
-        submitLabel="Save changes"
-        initial={location}
-        onSubmit={(updates) => onSave(updates, layerIds)}
-        onCancel={onCancel}
-        onDelete={onDelete}
-      />
     </div>
   )
 }
